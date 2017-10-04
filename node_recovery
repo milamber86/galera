@@ -1,0 +1,15 @@
+failed node | rm -rfv /var/lib/mysql/*
+OK     node | innobackupex --user=<user> --password=<pass> --stream=tar /tmp/ --galera-info | ssh root@<failed_node_ip> "tar xfi - -C /var/lib/mysql"
+(          )| wait for innobackupex completed OK message 
+failed node | cat /var/lib/mysql/xtrabackup_galera_info
+failed node | nano /var/lib/mysql/grastate.dat
+##>> ( fill uuid and seqno from grastate.dat ) <<
+# GALERA saved state
+version: 2.1
+uuid:    e3acd00e-cd19-11e6-ac75-377ac38f8aba
+seqno:   214005231
+safe_to_bootstrap: 0
+
+failed node | /usr/bin/innobackupex --apply-log /var/lib/mysql
+failed node | chown -R mysql:mysql /var/lib/mysql
+failed node | service mysql start
