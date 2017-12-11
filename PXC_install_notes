@@ -1,6 +1,8 @@
 -- PXC Instalace na CentOS7
 - node 1
 
+yum -y install vim nano wget rsync
+
 ssh-keygen -t rsa
 
 sysctl -w vm.swappiness=0
