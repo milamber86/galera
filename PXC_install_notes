@@ -1,7 +1,7 @@
 -- PXC Instalace na CentOS7
 - node 1
 
-yum -y install vim nano wget rsync socat
+yum -y install vim nano wget rsync socat epel-release
 
 ssh-keygen -t rsa
 
@@ -21,20 +21,22 @@ yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-sender-3.4
 yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-agent-3.4.3-1.el7.x86_64.rpm
 yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-release-3.4-2.el7.noarch.rpm
 
+mv /etc/zabbix/zabbix_agentd.conf /etc/zabbix/zabbix_agentd.conf_orig
 vim /etc/zabbix/zabbix_agentd.conf
 PidFile=/var/run/zabbix/zabbix_agentd.pid
 LogFile=/var/log/zabbix/zabbix_agentd.log
 LogFileSize=0
-Server=185.119.216.161
-ServerActive=185.119.216.161
-ListenPort=10049
+Server=185.138.222.4
+ServerActive=185.138.222.4
+ListenPort=10050
 Include=/etc/zabbix/zabbix_agentd.d/
-HostMetadata=Linux_PXC_Master
+HostMetadata=PXC_Linux
 AllowRoot=1
 Timeout=30
 
 
-vim /etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
+
+nano /etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
 # For all the following commands HOME should be set to the directory that has .my.cnf file with password information.
 
 # Flexible parameter to grab global variables. On the frontend side, use keys like mysql.status[Com_insert].
@@ -61,7 +63,7 @@ user=root
 password=<pass>
 
 
-vim /root/galera_check.sh
+nano /root/galera_check.sh
 #!/bin/bash
 # galera_check.sh
 # Script sending values about Galera nodes to zabbix trapper
@@ -112,6 +114,7 @@ sleep 4
 	done
 exit 0
 
+chmod u+x /root/galera_check.sh
 
 FPMMM
 cd /opt
@@ -159,6 +162,9 @@ MemcachedPort = 11211
 
 
 cat << _EOF >/etc/php.d/fpmmm.ini
+variables_order = "EGPCS"
+date.timezone = 'Europe/Zurich'
+_EOF
 chown -R zabbix: /etc/fpmmm
 /opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf
 cat /var/log/fpmmm/fpmmm.log
@@ -423,13 +429,18 @@ rsync -av root@node1:/opt/ /opt/
 rsync -av root@node1:/root/galera_check.sh /root/galera_check.sh
 
 cat << _EOF >/etc/php.d/fpmmm.ini
+variables_order = "EGPCS"
+date.timezone = 'Europe/Zurich'
+_EOF
+
+modify IPs and ID in /etc/my.cnf
+modify hostname in /etc/fpmmm/fpmmm.conf
+
 chown -R zabbix: /etc/fpmmm
 /opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf
 cat /var/log/fpmmm/fpmmm.log
 
-modify IPs and ID in /etc/my.cnf
-modify hostname in /etc/fpmmm/fpmmm.conf
-modify IPs in /root/galera_check.sh
+
 
 crontab -e
 * * * * * /opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf >/dev/null
