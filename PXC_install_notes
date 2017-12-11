@@ -6,6 +6,8 @@ yum -y install vim nano wget rsync socat
 ssh-keygen -t rsa
 
 sysctl -w vm.swappiness=0
+vim /etc/sysctl.conf
+vm.swappiness=0
 
 vim /etc/security/limits.conf
 * soft nofile 331072
