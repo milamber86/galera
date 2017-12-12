@@ -5,6 +5,8 @@ yum -y install vim nano wget rsync socat epel-release
 
 ssh-keygen -t rsa
 
+<todo> klice a firewall
+
 sysctl -w vm.swappiness=0
 vim /etc/sysctl.conf
 vm.swappiness=0
