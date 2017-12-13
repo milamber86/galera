@@ -75,7 +75,7 @@ nano /root/galera_check.sh
 # Vars
 zabbix_server="82.113.48.145"
 mysql_user="root"
-mysql_pass="hd35s6g4fe"
+mysql_pass="<pass>"
 # Create PID file
 mypidfile=/var/run/galera_check.pid
 
