@@ -1,0 +1,42 @@
+yum -y install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
+yum -y install proxysql
+yum -y install perl-DBD-MySQL
+
+nano /var/lib/proxysql/galera_check.pl
+https://raw.githubusercontent.com/Tusamarco/proxy_sql_tools/master/galera_check.pl
+chmod u+x /var/lib/proxysql/galera_check.pl
+
+chkconfig proxysql on
+service proxysql start
+mysql -u admin -padmin -h 127.0.0.1 -P6032
+
+use main;
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.1',10,3306,1000000000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.1',20,3306,1000000000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.2',10,3306,1);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.2',20,3306,10000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.3',10,3306,1);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.3',20,3306,10000);
+LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;
+
+UPDATE global_variables SET variable_value='proxysql' WHERE variable_name='mysql-monitor_username';
+UPDATE global_variables SET variable_value='proxysqlpass' WHERE variable_name='mysql-monitor_password';
+UPDATE global_variables SET variable_value='2000' WHERE variable_name IN ('mysql-monitor_connect_interval','mysql-monitor_ping_interval','mysql-monitor_read_only_interval');
+SELECT * FROM global_variables WHERE variable_name LIKE 'mysql-monitor_%';
+LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;
+
+SELECT * FROM monitor.mysql_server_connect_log ORDER BY time_start_us DESC LIMIT 10;
+SELECT * FROM monitor.mysql_server_ping_log ORDER BY time_start_us DESC LIMIT 10;
+
+INSERT INTO mysql_users(username,password,default_hostgroup) VALUES ('user','pass',10);
+...
+LOAD MYSQL USERS TO RUNTIME;SAVE MYSQL USERS TO DISK;
+
+INSERT INTO scheduler (id,active,interval_ms,filename,arg1) values (10,1,2000,"/var/lib/proxysql/galera_check.pl","-u=admin -p=admin -h=127.0.0.1 -H=10:W,20:R -P=6032 --main_segment=0 --debug=0 --active_failover=2 --log=/var/lib/proxysql/galeraLog");
+LOAD SCHEDULER TO RUNTIME;SAVE SCHEDULER TO DISK;
+
+SELECT * FROM mysql_replication_hostgroups;
+INSERT INTO mysql_replication_hostgroups (writer_hostgroup,reader_hostgroup,comment) VALUES (10,20,'ATC_PXC_NRB_LAB');
+LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;
+
+watch -n 1 'mysql -h 127.0.0.1 -P 6032 -uadmin -padmin -t -e "select * from stats_mysql_connection_pool where hostgroup = 10 order by srv_host;" -e "select * from stats_mysql_connection_pool where hostgroup = 20 order by srv_host;" -e "select * from stats_mysql_connection_pool where hostgroup in (8010,9020) order by srv_host;" -e " select hostgroup_id,hostname,status,weight,comment from mysql_servers where hostgroup_id in (10,20,8010,9020)  order by hostgroup_id,hostname ;"'
