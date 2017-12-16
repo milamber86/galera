@@ -5,6 +5,7 @@ yum -y install perl-DBD-MySQL
 nano /var/lib/proxysql/galera_check.pl
 https://raw.githubusercontent.com/Tusamarco/proxy_sql_tools/master/galera_check.pl
 chmod u+x /var/lib/proxysql/galera_check.pl
+chown -R proxysql:proxysql /var/lib/proxysql
 
 chkconfig proxysql on
 service proxysql start
