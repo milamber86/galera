@@ -11,12 +11,16 @@ service proxysql start
 mysql -u admin -padmin -h 127.0.0.1 -P6032
 
 use main;
-INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.1',10,3306,1000000000);
-INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.1',20,3306,1000000000);
-INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.2',10,3306,1);
-INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.2',20,3306,10000);
-INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.3',10,3306,1);
-INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('192.168.0.3',20,3306,10000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.13',8010,3306,1000000000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.14',8010,3306,1000000000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.15',8010,3306,1000000000);
+
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.13',10,3306,1000000000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.13',20,3306,1000000000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.14',10,3306,1);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.14',20,3306,10000);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.15',10,3306,1);
+INSERT INTO mysql_servers (hostname,hostgroup_id,port,weight) VALUES ('185.138.222.15',20,3306,10000);
 LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;
 
 UPDATE global_variables SET variable_value='proxysql' WHERE variable_name='mysql-monitor_username';
@@ -32,11 +36,19 @@ INSERT INTO mysql_users(username,password,default_hostgroup) VALUES ('user','pas
 ...
 LOAD MYSQL USERS TO RUNTIME;SAVE MYSQL USERS TO DISK;
 
-INSERT INTO scheduler (id,active,interval_ms,filename,arg1) values (10,1,2000,"/var/lib/proxysql/galera_check.pl","-u=admin -p=admin -h=127.0.0.1 -H=10:W,20:R -P=6032 --main_segment=0 --debug=0 --active_failover=2 --log=/var/lib/proxysql/galeraLog");
+INSERT INTO scheduler (id,active,interval_ms,filename,arg1) values (10,1,2000,"/var/lib/proxysql/galera_check.pl","-u=admin -p=admin -h=127.0.0.1 -H=10:W,20:R -P=6032 --main_segment=0 --debug=0 --active_failover=2 --execution_time=1 --retry_down=2 --retry_up=1 --log=/var/lib/proxysql/galeraLog");
 LOAD SCHEDULER TO RUNTIME;SAVE SCHEDULER TO DISK;
+
+INSERT INTO mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,apply) VALUES (1,1,'^SELECT .* FOR UPDATE$',10,1);
+INSERT INTO mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,apply) VALUES (2,1,'^SELECT',20,1);
+LOAD MYSQL QUERY RULES TO RUNTIME;SAVE MYSQL QUERY RULES TO DISK;
 
 SELECT * FROM mysql_replication_hostgroups;
 INSERT INTO mysql_replication_hostgroups (writer_hostgroup,reader_hostgroup,comment) VALUES (10,20,'ATC_PXC_NRB_LAB');
 LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;
 
-watch -n 1 'mysql -h 127.0.0.1 -P 6032 -uadmin -padmin -t -e "select * from stats_mysql_connection_pool where hostgroup = 10 order by srv_host;" -e "select * from stats_mysql_connection_pool where hostgroup = 20 order by srv_host;" -e "select * from stats_mysql_connection_pool where hostgroup in (8010,9020) order by srv_host;" -e " select hostgroup_id,hostname,status,weight,comment from mysql_servers where hostgroup_id in (10,20,8010,9020)  order by hostgroup_id,hostname ;"'
+watch -n 1 'mysql -h 127.0.0.1 -P 6032 -uadmin -padmin -t -e "select * from stats_mysql_connection_pool where hostgroup = 10 order by srv_host;" -e "select * from stats_mysql_connection_pool where hostgroup = 20 order by srv_host;" -e "select * from stats_mysql_connection_pool where hostgroup in (8010,9020) order by srv_host;" -e " select hostgroup_id,hostname,status,weight,comment from mysql_servers where hostgroup_id in (10,20,8010,9020)  order by hostgroup_id,hostname ;" -e "SELECT * FROM monitor.mysql_server_connect_log ORDER BY time_start_us DESC LIMIT 10;"'
+
+
+set global read_only=1;
+on "slave nodes"
