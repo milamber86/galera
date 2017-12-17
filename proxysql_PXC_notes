@@ -53,3 +53,13 @@ watch -n 1 'mysql -h 127.0.0.1 -P 6032 -uadmin -padmin -t -e "select * from stat
 
 set global read_only=1;
 on "slave nodes"
+
+
+
+-- proxysql query logging
+use main;
+SET mysql-eventslog_filename='/tmp/queries.log';
+LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;
+INSERT INTO mysql_query_rules (rule_id, active, match_digest, log,apply) VALUES (100,1,'.',1,1);
+LOAD MYSQL QUERY RULES TO RUNTIME;SAVE MYSQL QUERY RULES TO DISK;
+
