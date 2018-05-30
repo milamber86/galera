@@ -1,0 +1,84 @@
+both proxysql nodes:
+
+vim /etc/sysctl.conf
+net.ipv4.ip_nonlocal_bind=1
+
+sysctl -p
+
+
+proxysql1, /etc/keepalived/keepalived.conf
+
+global_defs {
+
+   notification_email {
+       beranek@icewarp.cz
+   }
+   notification_email_from kp1_ovb_de@ovbeuromail.loc
+   smtp_server mail.icewarp.cz
+   smtp_connect_timeout 60
+   router_id LVS_DEVEL
+}
+
+vrrp_script chk_maxscale
+{
+    script "killall -0 proxysql"
+    interval 2
+    weight 2
+}
+
+vrrp_instance VI_1
+{
+    interface ens160
+    state MASTER
+    virtual_router_id 51
+    priority 101
+    virtual_ipaddress
+    {
+        VIP IP
+    }
+    track_script
+    {
+        chk_proxysql
+    }
+}
+
+
+proxysql2, /etc/keepalived/keepalived.conf
+
+global_defs {
+
+   notification_email {
+       beranek@icewarp.cz
+   }
+   notification_email_from sender@domain
+   smtp_server mail.icewarp.cz
+   smtp_connect_timeout 60
+   router_id LVS_DEVEL
+}
+
+vrrp_script chk_maxscale
+{
+    script "killall -0 proxysql"
+    interval 2
+    weight 2
+}
+
+vrrp_instance VI_1
+{
+    interface ens160
+    state SLAVE
+    virtual_router_id 51
+    priority 100
+    virtual_ipaddress
+    {
+        VIP IP
+    }
+    track_script
+    {
+        chk_proxysql
+    }
+}
+
+
+
+
