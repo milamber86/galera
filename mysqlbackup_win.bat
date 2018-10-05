@@ -3,6 +3,7 @@
  set dbUser=root
  set dbPassword=password
  set backupDir="C:\Program Files (x86)\IceWarp\backup\dbdump\"
+ set rtDir="C:\Program Files (x86)\IceWarp\backup\dbdump_old\"
  set mysqlDataDir="C:\ProgramData\MySQL\MySQL Server 5.6\data"
  set mysqldump="C:\Program Files\MySQL\MySQL Server 5.6\bin\mysqldump.exe"
  set zip="C:\Program Files\7-Zip\7z.exe"
@@ -40,3 +41,7 @@
  del %backupDir%\%dirName%\%%f.sql
  )
  popd
+ 
+ :: remove backups older than3 days
+ ROBOCOPY %backupDir% %rtDir% /mov /minage:3
+ del %rtDir% /q
