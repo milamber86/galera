@@ -1,184 +1,56 @@
--- PXC Instalace na CentOS7
-- node 1
+-- setup 3 node PXC MySQL cluster with Maxscale loadbalancers on CentOS7
 
-yum -y install vim nano wget rsync socat epel-release
+1/ prequisities, hosts, IPs, users:
+- 3 centos7 servers for database nodes with basic OS installation and epel repo enabled
+- 2 centos7 servers for loadbalancer nodes with basic OS installation
+- in this manual we will have these servers with following IPs and users - example passwords:
 
+10.0.0.1 - db1 ( database node 1 )
+10.0.0.2 - db2 ( database node 2 )
+10.0.0.3 - db3 ( database node 3 )
+10.0.0.8 - lb1 ( database lodbalancer 1 )
+10.0.0.9 - lb2 ( database lodbalancer 2 )
+10.0.0.10 - lb vip ( virtual HA IP for application access )
+
+root - rootpass ( mysql root user )
+max - maxpass ( maxscale db balancer monitor user )
+repuser - repuserpass ( db replication user )
+iwdb - iwdbpass ( client application user )
+
+2/ database node1 installation:
+- update and install tools:
+yum -y update
+yum -y install vim nano wget rsync socat epel-release ntp
+
+3/ generate rsa key for node:
 ssh-keygen -t rsa
 
-<todo> klice a firewall
-<todo> ntpd
+4/ enable ntpd
+systemctl enable ntpd
+systemctl start ntpd
 
+5/ allow access between 10.0.0.1, 10.0.0.2, 10.0.0.3, ( database nodes ) dst 3306/tcp, 4567/tcp, 4567/udp, 4568/tcp, 4444/tcp on firewall;
+   allow access from 10.0.0.8, 10.0.0.9, 10.0.0.10 ( db loadbalancers ) to 10.0.0.1, 10.0.0.2, 10.0.0.3, ( db nodes ) dst 3306/tcp on firewall;
+   allow access from client application IPs (IceWarp) to 10.0.0.8, 10.0.0.9, 10.0.0.10, ( db loadbalancers ) dst 4008/tcp on firewall;
+
+6/ setup OS limits
+echo "vm.swappiness=0" >> /etc/sysctl.conf
 sysctl -w vm.swappiness=0
-vim /etc/sysctl.conf
-vm.swappiness=0
 
-vim /etc/security/limits.conf
-* soft nofile 4096
-* hard nofile 10240
+echo "* soft nofile 4096" >> /etc/security/limits.conf
+echo "* hard nofile 10240" >> /etc/security/limits.conf
 
+sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+setenforce 0
+
+7/ remove potentially conflicting packages
 yum -y remove mariadb* MariaDB* mysql* MySQL*
+
+8/ install percona repository and packages
 yum -y install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
 yum -y install Percona-XtraDB-Cluster-57 percona-toolkit percona-xtrabackup-24
-yum -y install php-cli php-process php-mysqli php-memcached
-yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-sender-3.4.3-1.el7.x86_64.rpm
-yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-agent-3.4.3-1.el7.x86_64.rpm
-yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-release-3.4-2.el7.noarch.rpm
 
-mv /etc/zabbix/zabbix_agentd.conf /etc/zabbix/zabbix_agentd.conf_orig
-vim /etc/zabbix/zabbix_agentd.conf
-PidFile=/var/run/zabbix/zabbix_agentd.pid
-LogFile=/var/log/zabbix/zabbix_agentd.log
-LogFileSize=0
-Server=185.138.222.4
-ServerActive=185.138.222.4
-ListenPort=10050
-Include=/etc/zabbix/zabbix_agentd.d/
-HostMetadata=PXC_Linux
-AllowRoot=1
-Timeout=30
-
-
-
-nano /etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
-# For all the following commands HOME should be set to the directory that has .my.cnf file with password information.
-
-# Flexible parameter to grab global variables. On the frontend side, use keys like mysql.status[Com_insert].
-# Key syntax is mysql.status[variable].
-UserParameter=mysql.status[*],echo "show global status where Variable_name='$1';" | HOME=/etc/zabbix mysql -N | awk '{print $$2}'
-
-# Flexible parameter to determine database or table size. On the frontend side, use keys like mysql.size[zabbix,history,data].
-# Key syntax is mysql.size[<database>,<table>,<type>].
-# Database may be a database name or "all". Default is "all".
-# Table may be a table name or "all". Default is "all".
-# Type may be "data", "index", "free" or "both". Both is a sum of data and index. Default is "both".
-# Database is mandatory if a table is specified. Type may be specified always.
-# Returns value in bytes.
-# 'sum' on data_length or index_length alone needed when we are getting this information for whole database instead of a single table
-UserParameter=mysql.size[*],bash -c 'echo "select sum($(case "$3" in both|"") echo "data_length+index_length";; data|index) echo "$3_length";; free) echo "data_free";; esac)) from information_schema.tables$([[ "$1" = "all" || ! "$1" ]] || echo " where table_schema=\"$1\"")$([[ "$2" = "all" || ! "$2" ]] || echo "and table_name=\"$2\"");" | HOME=/etc/zabbix mysql -N'
-
-UserParameter=mysql.ping,HOME=/etc/zabbix mysqladmin ping | grep -c alive
-UserParameter=mysql.version,mysql -V
-
-
-vim /etc/zabbix/.my.cnf
-[client]
-user=root
-password=<pass>
-
-
-nano /root/galera_check.sh
-#!/bin/bash
-# galera_check.sh
-# Script sending values about Galera nodes to zabbix trapper
-# beranek@icewarp.cz
-
-# Vars
-zabbix_server="82.113.48.145"
-mysql_user="root"
-mysql_pass="<pass>"
-# Create PID file
-mypidfile=/var/run/galera_check.pid
-
-# Ensure PID file is removed on program exit.
-trap "rm -f -- '${mypidfile}'" EXIT
-
-# Create a file with current PID to indicate that process is running.
-echo $$ > "${mypidfile}"
-
-# Check for duplicate process running, if so, exit with error.
-for pid in $(pgrep -f galera_check.sh); do
-    if [ ${pid} != $$ ]; then
-        echo "[$(date)] : galera_check.sh : Process is already running with PID ${pid}, exiting 1." > /dev/null 2>&1
-        exit 1
-    fi
-done
-
-# Run single checks once per minute
-
-# Run repeated checks 10 times a minute with 5s pause between them
-for I in `seq 1 10`;
-        do
-wsrep_last_committed=$(/usr/bin/mysql -u ${mysql_user} -p${mysql_pass} --execute="SHOW STATUS LIKE 'wsrep_last_committed'\G" | grep "Value:" | sed -r 's|^.*Value:\s(.*)|\1|' | tail -c 5)
-zabbix_sender -z 82.113.48.145 -s "$(hostname)" -k wsrep.last.committed -o ${wsrep_last_committed} > /dev/null 2>&1
-zabbix_sender -z 185.119.216.161 -s "$(hostname)" -k wsrep.last.committed -o ${wsrep_last_committed} > /dev/null 2>&1
-wsrep_cluster_size=$(/usr/bin/mysql -u ${mysql_user} -p${mysql_pass} --execute="SHOW STATUS LIKE 'wsrep_cluster_size'\G" | grep "Value:" | sed -r 's|^.*Value:\s(.*)|\1|')
-zabbix_sender -z 82.113.48.145 -s "$(hostname)" -k wsrep.cluster.size -o ${wsrep_cluster_size} > /dev/null 2>&1
-zabbix_sender -z 185.119.216.161 -s "$(hostname)" -k wsrep.cluster.size -o ${wsrep_cluster_size} > /dev/null 2>&1
-wsrep_flow_control_paused=$(/usr/bin/mysql -u ${mysql_user} -p${mysql_pass} --execute="SHOW STATUS LIKE 'wsrep_flow_control_paused'\G" | grep "Value:" | sed -r 's|^.*Value:\s(.*)|\1|')
-zabbix_sender -z 82.113.48.145 -s "$(hostname)" -k wsrep.flow.control.paused -o ${wsrep_cluster_size} > /dev/null 2>&1
-zabbix_sender -z 185.119.216.161 -s "$(hostname)" -k wsrep.flow.control.paused -o ${wsrep_cluster_size} > /dev/null 2>&1
-wsrep_flow_control_sent=$(/usr/bin/mysql -u ${mysql_user} -p${mysql_pass} --execute="SHOW STATUS LIKE 'wsrep_flow_control_sent'\G" | grep "Value:" | sed -r 's|^.*Value:\s(.*)|\1|')
-zabbix_sender -z 82.113.48.145 -s "$(hostname)" -k wsrep.flow.control.sent -o ${wsrep_cluster_size} > /dev/null 2>&1
-zabbix_sender -z 185.119.216.161 -s "$(hostname)" -k wsrep.flow.control.sent -o ${wsrep_cluster_size} > /dev/null 2>&1
-wsrep_flow_control_recv=$(/usr/bin/mysql -u ${mysql_user} -p${mysql_pass} --execute="SHOW STATUS LIKE 'wsrep_flow_control_recv'\G" | grep "Value:" | sed -r 's|^.*Value:\s(.*)|\1|')
-zabbix_sender -z 82.113.48.145 -s "$(hostname)" -k wsrep.flow.control.recv -o ${wsrep_cluster_size} > /dev/null 2>&1
-zabbix_sender -z 185.119.216.161 -s "$(hostname)" -k wsrep.flow.control.recv -o ${wsrep_cluster_size} > /dev/null 2>&1
-sleep 4
-	done
-exit 0
-
-chmod u+x /root/galera_check.sh
-
-FPMMM
-cd /opt
-wget https://mail.icewarp.cz/webdav/ticket/eJxNyTEOgzAMAMDfeEtwQtzA4JUP8ALc2BGqIqqUDuX1Xbn1KlOWaBMhqiEYr8dXjv6DJy,wuaUidHYxpJwI85RAGXamWQuWQpTLPNi7teaCRx,8uXVfL3hxjPIw0THIH15oHlM_/fpmmm-1.0.1.tar.gz
-tar xzfv fpmmm-1.0.1.tar.gz
-ln -s fpmmm-1.0.1 fpmmm
-mkdir /etc/fpmmm
-vim /etc/fpmmm/fpmmm.conf
-[self]
-Interval      = 60
-PidFile       = /var/run/fpmmm/fpmmm.pid
-
-[default]
-Type          = mysqld
-Modules       = aria galera innodb master mysql process security
-LogLevel      = 2
-LogFile       = /var/log/fpmmm/fpmmm.log
-CacheFileBase = /var/cache/fpmmm/fpmmm
-AgentLockFile = /var/run/fpmmm/fpmmm.lock
-
-Username      = root
-Password      = <pass>
-MysqlHost     = 127.0.0.1
-MysqlPort     = 3306
-PidFile       = /var/lib/mysql/mysql.pid
-
-ZabbixServer  = <zabbix_server_IP>
-Disabled      = false
-
-[<monitored server hostname>]          # This MUST match Hostname in Zabbix!
-Type          = host
-Modules       = fpmmm server
-
-[<monitored server hostname>]          # This MUST match Hostname in Zabbix!
-Type          = mysqld
-Modules       = aria galera innodb master mysql process security
-MysqlPort     = 3306
-PidFile       = /var/lib/mysql/mysql.pid
-
-[memcache]          # This MUST match Hostname in Zabbix!
-Type          = memcached
-Modules       = memcached
-MemcachedHost = 127.0.0.1
-MemcachedPort = 11211
-
-
-cat << _EOF >/etc/php.d/fpmmm.ini
-variables_order = "EGPCS"
-date.timezone = 'Europe/Zurich'
-_EOF
-chown -R zabbix: /etc/fpmmm
-/opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf
-cat /var/log/fpmmm/fpmmm.log
-
-
-crontab -e
-* * * * * /opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf >/dev/null
-* * * * * /root/galera_check.sh
-
-
-nano /etc/my.cnf
+9/ configure /etc/my.cnf
 #
 # The Percona XtraDB Cluster 5.7 configuration file.
 #
@@ -192,35 +64,35 @@ nano /etc/my.cnf
 # !includedir /etc/percona-xtradb-cluster.conf.d/
 [mysqld]
 innodb_force_recovery = 0
-pxc_strict_mode = DISABLED
+pxc_strict_mode = PERMISSIVE
 old_alter_table = ON
 user=mysql
 basedir=/usr/
-datadir=/data/mysql
+datadir=/var/lib/mysql
 socket=/var/lib/mysql/mysql.sock
 pid_file=/var/lib/mysql/mysql.pid
 port=3306
 log_error=/var/log/mysql/mysqld.log
 log_warnings=2
 log_output = FILE
-slow_query_log=0
+slow_query_log=1
 log_queries_not_using_indexes=1
 slow_query_log_file=/var/log/mysql/slow.log
-long_query_time=0
+long_query_time=1
 ### INNODB OPTIONS
-innodb_buffer_pool_size=64G
+innodb_buffer_pool_size=64G  ## change according to node memory size, free -m, set up to 85% of total physical memory of the node
 innodb_flush_log_at_trx_commit=0
 innodb_file_per_table=1
 innodb_data_file_path = ibdata1:200M:autoextend
 ## You may want to tune the below depending on number of cores and disk sub
-innodb_read_io_threads=8
-innodb_write_io_threads=8
+innodb_read_io_threads=8  ## set to number of node CPU cores
+innodb_write_io_threads=8  ## set to number of node CPU cores
 innodb_doublewrite=1
 innodb_log_file_size=2048M
 innodb_log_buffer_size=512M
-innodb_buffer_pool_instances=64
+innodb_buffer_pool_instances=64 ## same number as in "innodb_buffer_pool_size" recommended here
 innodb_log_files_in_group=2
-innodb_thread_concurrency=64
+innodb_thread_concurrency=64 ## same number as in "innodb_buffer_pool_size" recommended here
 # innodb_file_format = barracuda
 innodb_flush_method = O_DIRECT
 # innodb_locks_unsafe_for_binlog = 1
@@ -231,12 +103,12 @@ default_storage_engine=InnoDB
 open-files-limit=331072
 
 # CHARACTER SET
-collation_server = utf8_czech_ci
+collation_server = utf8_general_ci ## set according to application language preferences
 init_connect='SET NAMES utf8'
 character_set_server = utf8
 
 # REPLICATION SPECIFIC
-server_id=<node ID>
+server_id=1
 binlog_format=ROW
 log_bin=/cache/mysql/binlog
 log_slave_updates=1
@@ -286,20 +158,20 @@ performance-schema-max-mutex-instances = 0
 # Full path to wsrep provider library or 'none'
 wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
 wsrep_on=ON
-wsrep_node_address=<node IP>
+wsrep_node_address=10.0.0.1
 
 # Provider specific configuration options
 wsrep_provider_options="gcache.dir=/cache/mysql/;cert.log_conflicts=yes;gcache.size=12G;gcache.page_size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gmcast.segment=0;"
 
 # Logical cluster name. Should be the same for all nodes.
-wsrep_cluster_name="ATC_PXC_TTC_CZ"
+wsrep_cluster_name="Name your database cluster HERE"
 
 # Group communication system handle
-#wsrep_cluster_address=gcomm://
-wsrep_cluster_address=gcomm://<node 1 IP>,<node 2 IP>,<node 3 IP>
+wsrep_cluster_address=gcomm://
+#wsrep_cluster_address=gcomm://10.0.0.1:4567,10.0.0.2:4567,10.0.0.3:4567
 
 # Human_readable node name (non-unique). Hostname by default.
-wsrep_node_name=<node IP>
+wsrep_node_name=10.0.0.1
 
 # Address for incoming client connections. Autodetect by default.
 #wsrep_node_incoming_address=
@@ -370,7 +242,7 @@ wsrep_sst_method=xtrabackup-v2
 # Depends on SST method. For mysqldump method it is root:<root password>
 # IMPORTANT: The user/password in wsrep_sst_auth must match
 # user/password in [xtrabackup]
-wsrep_sst_auth=backupuser:<pass>
+wsrep_sst_auth=repuser:repuserpass
 
 # Desired SST donor name.
 #wsrep_sst_donor=
@@ -388,66 +260,609 @@ socket=/var/lib/mysql/mysql.sock
 [mysqldump]
 max_allowed_packet = 512M
 # default_character_set = utf8
-user=backupuser
-password=<pass>
+user=repuser
+password=repuserpass
 
 # IMPORTANT: The user/password in wsrep_sst_auth must match
 # user/password in [xtrabackup]
 [xtrabackup]
-user=backupuser
-password=<pass>
+user=repuser
+password=repuserpass
 ssl=0
 
 [MYSQLD_SAFE]
 # log_error = /var/log/mysqld.log
 basedir=/usr/
 # datadir = /var/lib/mysql
+### END OF my.cnf FILE ###
 
+10/ bootstrap the cluster from the db1 node
+mkdir -p /var/log/mysql
+chown mysql:mysql /var/log/mysql
+systemctl enable mysql
+systemctl start mysql &
+tail -f /var/log/mysql/mysqld.log
 
-bootstrap node1
+11/ get the starting root password, change the mysql root password, create grants for replication user
+grep -i password /var/log/mysql/mysqld.log | tail -1
+mysql -u root -p<password from the previous step>
+alter user 'root'@'localhost' identified by 'rootpass';
+grant all privileges on *.* to 'repuser'@'localhost' identified by 'repuserpass';
+grant all privileges on *.* to 'repuser'@'127.0.0.1' identified by 'repuserpass';
+flush privileges;
+quit;
+echo "[client]" >> /root/.my.cnf
+echo "user=root" >> /root/.my.cnf
+echo "password=rootpass" >> /root/.my.cnf
 
+12/ create grants for maxscale lb monitor user
+mysql
+create user 'max'@'10.0.0.8' identified by 'maxpass';
+create user 'max'@'10.0.0.9' identified by 'maxpass';
+create user 'max'@'10.0.0.10' identified by ',maxpass';
+grant SELECT on mysql.user to 'max'@'10.0.0.8';
+grant SELECT on mysql.user to 'max'@'10.0.0.9';
+grant SELECT on mysql.user to 'max'@'10.0.0.10';
+grant SELECT on mysql.db to 'max'@'10.0.0.8';
+grant SELECT on mysql.db to 'max'@'10.0.0.9';
+grant SELECT on mysql.db to 'max'@'10.0.0.10';
+grant SELECT on mysql.tables_priv to 'max'@'10.0.0.8';
+grant SELECT on mysql.tables_priv to 'max'@'10.0.0.9';
+grant SELECT on mysql.tables_priv to 'max'@'10.0.0.10';
+grant SHOW DATABASES ON *.* to 'max'@'10.0.0.8';
+grant SHOW DATABASES ON *.* to 'max'@'10.0.0.9';
+grant SHOW DATABASES ON *.* to 'max'@'10.0.0.10';
+grant REPLICATION SLAVE on *.* to 'max'@'10.0.0.8';
+grant REPLICATION SLAVE on *.* to 'max'@'10.0.0.9';
+grant REPLICATION SLAVE on *.* to 'max'@'10.0.0.10';
+flush privileges;
+quit;
 
-- node2, node3
+13/ continue with db2 node
+- update and install tools:
+yum -y update
+yum -y install vim nano wget rsync socat epel-release ntp
 
+14/ generate rsa key for node and exchange keys between db1 and db2 nodes:
 ssh-keygen -t rsa
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
+ssh root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
 
+15/ enable ntpd
+systemctl enable ntpd
+systemctl start ntpd
+
+16/ allow access between 10.0.0.1, 10.0.0.2, 10.0.0.3, ( database nodes ) dst 3306/tcp, 4567/tcp, 4567/udp, 4568/tcp, 4444/tcp on firewall;
+    allow access from 10.0.0.8, 10.0.0.9, 10.0.0.10 ( db loadbalancers ) to 10.0.0.1, 10.0.0.2, 10.0.0.3, ( db nodes ) dst 3306/tcp on firewall;
+    allow access from client application IPs (IceWarp) to 10.0.0.8, 10.0.0.9, 10.0.0.10, ( db loadbalancers ) dst 4008/tcp on firewall;
+
+17/ setup OS limits
+echo "vm.swappiness=0" >> /etc/sysctl.conf
 sysctl -w vm.swappiness=0
 
-vim /etc/security/limits.conf
-* soft nofile 331072
-* hard nofile 331072
+echo "* soft nofile 4096" >> /etc/security/limits.conf
+echo "* hard nofile 10240" >> /etc/security/limits.conf
 
+sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+setenforce 0
+
+18/ remove potentially conflicting packages
 yum -y remove mariadb* MariaDB* mysql* MySQL*
+
+19/ install percona repository and packages
 yum -y install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
 yum -y install Percona-XtraDB-Cluster-57 percona-toolkit percona-xtrabackup-24
-yum -y install php-cli php-process php-mysqli php-memcached
-yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-sender-3.4.3-1.el7.x86_64.rpm
-yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-agent-3.4.3-1.el7.x86_64.rpm
-yum -y install http://repo.zabbix.com/zabbix/3.4/rhel/7/x86_64/zabbix-release-3.4-2.el7.noarch.rpm
 
-rsync -av root@node1:/etc/zabbix/ /etc/zabbix/
-rsync -av root@node1:/etc/my.cnf /etc/my.cnf
-rsync -av root@node1:/etc/fpmmm/ /etc/fpmmm/
-rsync -av root@node1:/opt/ /opt/
-rsync -av root@node1:/root/galera_check.sh /root/galera_check.sh
+20/ configure /etc/my.cnf
+#
+# The Percona XtraDB Cluster 5.7 configuration file.
+#
+#
+# * IMPORTANT: Additional settings that can override those from this file!
+#   The files must end with '.cnf', otherwise they'll be ignored.
+#   Please make any edits and changes to the appropriate sectional files
+#   included below.
+#
+# !includedir /etc/my.cnf.d/
+# !includedir /etc/percona-xtradb-cluster.conf.d/
+[mysqld]
+innodb_force_recovery = 0
+pxc_strict_mode = PERMISSIVE
+old_alter_table = ON
+user=mysql
+basedir=/usr/
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+pid_file=/var/lib/mysql/mysql.pid
+port=3306
+log_error=/var/log/mysql/mysqld.log
+log_warnings=2
+log_output = FILE
+slow_query_log=1
+log_queries_not_using_indexes=1
+slow_query_log_file=/var/log/mysql/slow.log
+long_query_time=1
+### INNODB OPTIONS
+innodb_buffer_pool_size=64G  ## change according to node memory size, free -m, set up to 85% of total physical memory of the node
+innodb_flush_log_at_trx_commit=0
+innodb_file_per_table=1
+innodb_data_file_path = ibdata1:200M:autoextend
+## You may want to tune the below depending on number of cores and disk sub
+innodb_read_io_threads=8  ## set to number of node CPU cores
+innodb_write_io_threads=8  ## set to number of node CPU cores
+innodb_doublewrite=1
+innodb_log_file_size=2048M
+innodb_log_buffer_size=512M
+innodb_buffer_pool_instances=64 ## same number as in "innodb_buffer_pool_size" recommended here
+innodb_log_files_in_group=2
+innodb_thread_concurrency=64 ## same number as in "innodb_buffer_pool_size" recommended here
+# innodb_file_format = barracuda
+innodb_flush_method = O_DIRECT
+# innodb_locks_unsafe_for_binlog = 1
+innodb_autoinc_lock_mode=2
+## avoid statistics update when doing e.g show tables
+innodb_stats_on_metadata=0
+default_storage_engine=InnoDB
+open-files-limit=331072
 
-cat << _EOF >/etc/php.d/fpmmm.ini
-variables_order = "EGPCS"
-date.timezone = 'Europe/Zurich'
-_EOF
+# CHARACTER SET
+collation_server = utf8_general_ci ## set according to application language preferences
+init_connect='SET NAMES utf8'
+character_set_server = utf8
 
-modify IPs and ID in /etc/my.cnf
-modify hostname in /etc/fpmmm/fpmmm.conf
+# REPLICATION SPECIFIC
+server_id=2
+binlog_format=ROW
+log_bin=/cache/mysql/binlog
+log_slave_updates=1
+expire_logs_days=3
+max_binlog_files=8
+# relay_log = relay-bin
 
-chown -R zabbix: /etc/fpmmm
-/opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf
-cat /var/log/fpmmm/fpmmm.log
+# OTHER THINGS, BUFFERS ETC
+key_buffer_size = 24M
+tmp_table_size = 64M
+max_heap_table_size = 64M
+max_allowed_packet = 1073741824
+join_buffer_size = 32M
+sort_buffer_size = 2M
+read_buffer_size = 512K
+read_rnd_buffer_size = 1M
+# myisam_sort_buffer_size = 8M
+skip_name_resolve
+memlock=0
+sysdate_is_now=1
+max_connections=1601
+max_connect_errors=300
+thread_cache_size=1024
+query_cache_type = 0
+query_cache_size = 0
+table_open_cache=2048
+lower_case_table_names=1
+#
+binlog_cache_size=1048900
+binlog_stmt_cache_size=1048900
+table_definition_cache=10000
+wait_timeout=93600
+connect_timeout=30
+net_read_timeout=180
+net_write_timeout=360
 
+# 5.6 backwards compatibility (FIXME)
+# explicit_defaults_for_timestamp = 1
+##
+## WSREP options
+##
 
+performance_schema = ON
+performance-schema-max-mutex-classes = 0
+performance-schema-max-mutex-instances = 0
 
-crontab -e
-* * * * * /opt/fpmmm/bin/fpmmm --config=/etc/fpmmm/fpmmm.conf >/dev/null
-* * * * * /root/galera_check.sh
+# Full path to wsrep provider library or 'none'
+wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
+wsrep_on=ON
+wsrep_node_address=10.0.0.2
 
+# Provider specific configuration options
+wsrep_provider_options="gcache.dir=/cache/mysql/;cert.log_conflicts=yes;gcache.size=12G;gcache.page_size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gmcast.segment=0;"
 
-start mysql on node, wait for it to join the cluster
+# Logical cluster name. Should be the same for all nodes.
+wsrep_cluster_name="Name your database cluster HERE"
+
+# Group communication system handle
+#wsrep_cluster_address=gcomm://
+wsrep_cluster_address=gcomm://10.0.0.1:4567,10.0.0.2:4567,10.0.0.3:4567
+
+# Human_readable node name (non-unique). Hostname by default.
+wsrep_node_name=10.0.0.2
+
+# Address for incoming client connections. Autodetect by default.
+#wsrep_node_incoming_address=
+
+# How many threads will process writesets from other nodes
+wsrep_slave_threads=32
+
+# DBUG options for wsrep provider
+#wsrep_dbug_option
+
+# Generate fake primary keys for non-PK tables (required for multi-master
+# and parallel applying operation)
+wsrep_certify_nonPK=1
+
+# Location of the directory with data files. Needed for non-mysqldump
+# state snapshot transfers. Defaults to mysql_real_data_home.
+#wsrep_data_home_dir=
+
+# Maximum number of rows in write set
+wsrep_max_ws_rows=0
+
+# Maximum size of write set
+wsrep_max_ws_size=2G
+
+# to enable debug level logging, set this to 1
+wsrep_debug=0
+
+# convert locking sessions into transactions
+wsrep_convert_LOCK_to_trx=0
+
+# how many times to retry deadlocked autocommits
+wsrep_retry_autocommit=1
+
+# change auto_increment_increment and auto_increment_offset automatically
+wsrep_auto_increment_control=1
+
+# replicate myisam
+wsrep_replicate_myisam=0
+
+# retry autoinc insert, which failed for duplicate key error
+wsrep_drupal_282555_workaround=0
+
+# enable "strictly synchronous" semantics for read operations
+wsrep_causal_reads=0
+
+# Command to call when node status or cluster membership changes.
+# Will be passed all or some of the following options:
+# --status  - new status of this node
+# --uuid    - UUID of the cluster
+# --primary - whether the component is primary or not ("yes"/"no")
+# --members - comma-separated list of members
+# --index   - index of this node in the list
+#wsrep_notify_cmd=
+
+##
+## WSREP State Transfer options
+##
+
+# State Snapshot Transfer method
+# ClusterControl currently DOES NOT support wsrep_sst_method=mysqldump
+wsrep_sst_method=xtrabackup-v2
+
+# Address on THIS node to receive SST at. DON'T SET IT TO DONOR ADDRESS!!!
+# (SST method dependent. Defaults to the first IP of the first interface)
+#wsrep_sst_receive_address=
+
+# SST authentication string. This will be used to send SST to joining nodes.
+# Depends on SST method. For mysqldump method it is root:<root password>
+# IMPORTANT: The user/password in wsrep_sst_auth must match
+# user/password in [xtrabackup]
+wsrep_sst_auth=repuser:repuserpass
+
+# Desired SST donor name.
+#wsrep_sst_donor=
+
+# Protocol version to use
+# wsrep_protocol_version=
+
+[MYSQL]
+socket=/var/lib/mysql/mysql.sock
+# default_character_set = utf8
+[client]
+socket=/var/lib/mysql/mysql.sock
+# default_character_set = utf8
+
+[mysqldump]
+max_allowed_packet = 512M
+# default_character_set = utf8
+user=repuser
+password=repuserpass
+
+# IMPORTANT: The user/password in wsrep_sst_auth must match
+# user/password in [xtrabackup]
+[xtrabackup]
+user=repuser
+password=repuserpass
+ssl=0
+
+[MYSQLD_SAFE]
+# log_error = /var/log/mysqld.log
+basedir=/usr/
+# datadir = /var/lib/mysql
+### END OF my.cnf FILE ###
+
+21/ join db2 node to the cluster
+mkdir -p /var/log/mysql
+chown mysql:mysql /var/log/mysql
+systemctl enable mysql
+systemctl start mysql &
+tail -f /var/log/mysql/mysqld.log
+
+22/ continue with db3 node
+- update and install tools:
+yum -y update
+yum -y install vim nano wget rsync socat epel-release ntp
+
+23/ generate rsa key for node and exchange keys between db1 and db2 nodes:
+ssh-keygen -t rsa
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.3
+ssh root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.3
+ssh root@10.0.0.2
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.3
+
+24/ enable ntpd
+systemctl enable ntpd
+systemctl start ntpd
+
+25/ allow access between 10.0.0.1, 10.0.0.2, 10.0.0.3, ( database nodes ) dst 3306/tcp, 4567/tcp, 4567/udp, 4568/tcp, 4444/tcp on firewall;
+    allow access from 10.0.0.8, 10.0.0.9, 10.0.0.10 ( db loadbalancers ) to 10.0.0.1, 10.0.0.2, 10.0.0.3, ( db nodes ) dst 3306/tcp on firewall;
+    allow access from client application IPs (IceWarp) to 10.0.0.8, 10.0.0.9, 10.0.0.10, ( db loadbalancers ) dst 4008/tcp on firewall;
+
+26/ setup OS limits, disable selinux
+echo "vm.swappiness=0" >> /etc/sysctl.conf
+sysctl -w vm.swappiness=0
+
+echo "* soft nofile 4096" >> /etc/security/limits.conf
+echo "* hard nofile 10240" >> /etc/security/limits.conf
+
+sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+setenforce 0
+
+27/ remove potentially conflicting packages
+yum -y remove mariadb* MariaDB* mysql* MySQL*
+
+28/ install percona repository and packages
+yum -y install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
+yum -y install Percona-XtraDB-Cluster-57 percona-toolkit percona-xtrabackup-24
+
+29/ configure /etc/my.cnf
+#
+# The Percona XtraDB Cluster 5.7 configuration file.
+#
+#
+# * IMPORTANT: Additional settings that can override those from this file!
+#   The files must end with '.cnf', otherwise they'll be ignored.
+#   Please make any edits and changes to the appropriate sectional files
+#   included below.
+#
+# !includedir /etc/my.cnf.d/
+# !includedir /etc/percona-xtradb-cluster.conf.d/
+[mysqld]
+innodb_force_recovery = 0
+pxc_strict_mode = PERMISSIVE
+old_alter_table = ON
+user=mysql
+basedir=/usr/
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+pid_file=/var/lib/mysql/mysql.pid
+port=3306
+log_error=/var/log/mysql/mysqld.log
+log_warnings=2
+log_output = FILE
+slow_query_log=1
+log_queries_not_using_indexes=1
+slow_query_log_file=/var/log/mysql/slow.log
+long_query_time=1
+### INNODB OPTIONS
+innodb_buffer_pool_size=64G  ## change according to node memory size, free -m, set up to 85% of total physical memory of the node
+innodb_flush_log_at_trx_commit=0
+innodb_file_per_table=1
+innodb_data_file_path = ibdata1:200M:autoextend
+## You may want to tune the below depending on number of cores and disk sub
+innodb_read_io_threads=8  ## set to number of node CPU cores
+innodb_write_io_threads=8  ## set to number of node CPU cores
+innodb_doublewrite=1
+innodb_log_file_size=2048M
+innodb_log_buffer_size=512M
+innodb_buffer_pool_instances=64 ## same number as in "innodb_buffer_pool_size" recommended here
+innodb_log_files_in_group=2
+innodb_thread_concurrency=64 ## same number as in "innodb_buffer_pool_size" recommended here
+# innodb_file_format = barracuda
+innodb_flush_method = O_DIRECT
+# innodb_locks_unsafe_for_binlog = 1
+innodb_autoinc_lock_mode=2
+## avoid statistics update when doing e.g show tables
+innodb_stats_on_metadata=0
+default_storage_engine=InnoDB
+open-files-limit=331072
+
+# CHARACTER SET
+collation_server = utf8_general_ci ## set according to application language preferences
+init_connect='SET NAMES utf8'
+character_set_server = utf8
+
+# REPLICATION SPECIFIC
+server_id=3
+binlog_format=ROW
+log_bin=/cache/mysql/binlog
+log_slave_updates=1
+expire_logs_days=3
+max_binlog_files=8
+# relay_log = relay-bin
+
+# OTHER THINGS, BUFFERS ETC
+key_buffer_size = 24M
+tmp_table_size = 64M
+max_heap_table_size = 64M
+max_allowed_packet = 1073741824
+join_buffer_size = 32M
+sort_buffer_size = 2M
+read_buffer_size = 512K
+read_rnd_buffer_size = 1M
+# myisam_sort_buffer_size = 8M
+skip_name_resolve
+memlock=0
+sysdate_is_now=1
+max_connections=1601
+max_connect_errors=300
+thread_cache_size=1024
+query_cache_type = 0
+query_cache_size = 0
+table_open_cache=2048
+lower_case_table_names=1
+#
+binlog_cache_size=1048900
+binlog_stmt_cache_size=1048900
+table_definition_cache=10000
+wait_timeout=93600
+connect_timeout=30
+net_read_timeout=180
+net_write_timeout=360
+
+# 5.6 backwards compatibility (FIXME)
+# explicit_defaults_for_timestamp = 1
+##
+## WSREP options
+##
+
+performance_schema = ON
+performance-schema-max-mutex-classes = 0
+performance-schema-max-mutex-instances = 0
+
+# Full path to wsrep provider library or 'none'
+wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
+wsrep_on=ON
+wsrep_node_address=10.0.0.3
+
+# Provider specific configuration options
+wsrep_provider_options="gcache.dir=/cache/mysql/;cert.log_conflicts=yes;gcache.size=12G;gcache.page_size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gmcast.segment=0;"
+
+# Logical cluster name. Should be the same for all nodes.
+wsrep_cluster_name="Name your database cluster HERE"
+
+# Group communication system handle
+#wsrep_cluster_address=gcomm://
+wsrep_cluster_address=gcomm://10.0.0.1:4567,10.0.0.2:4567,10.0.0.3:4567
+
+# Human_readable node name (non-unique). Hostname by default.
+wsrep_node_name=10.0.0.3
+
+# Address for incoming client connections. Autodetect by default.
+#wsrep_node_incoming_address=
+
+# How many threads will process writesets from other nodes
+wsrep_slave_threads=32
+
+# DBUG options for wsrep provider
+#wsrep_dbug_option
+
+# Generate fake primary keys for non-PK tables (required for multi-master
+# and parallel applying operation)
+wsrep_certify_nonPK=1
+
+# Location of the directory with data files. Needed for non-mysqldump
+# state snapshot transfers. Defaults to mysql_real_data_home.
+#wsrep_data_home_dir=
+
+# Maximum number of rows in write set
+wsrep_max_ws_rows=0
+
+# Maximum size of write set
+wsrep_max_ws_size=2G
+
+# to enable debug level logging, set this to 1
+wsrep_debug=0
+
+# convert locking sessions into transactions
+wsrep_convert_LOCK_to_trx=0
+
+# how many times to retry deadlocked autocommits
+wsrep_retry_autocommit=1
+
+# change auto_increment_increment and auto_increment_offset automatically
+wsrep_auto_increment_control=1
+
+# replicate myisam
+wsrep_replicate_myisam=0
+
+# retry autoinc insert, which failed for duplicate key error
+wsrep_drupal_282555_workaround=0
+
+# enable "strictly synchronous" semantics for read operations
+wsrep_causal_reads=0
+
+# Command to call when node status or cluster membership changes.
+# Will be passed all or some of the following options:
+# --status  - new status of this node
+# --uuid    - UUID of the cluster
+# --primary - whether the component is primary or not ("yes"/"no")
+# --members - comma-separated list of members
+# --index   - index of this node in the list
+#wsrep_notify_cmd=
+
+##
+## WSREP State Transfer options
+##
+
+# State Snapshot Transfer method
+# ClusterControl currently DOES NOT support wsrep_sst_method=mysqldump
+wsrep_sst_method=xtrabackup-v2
+
+# Address on THIS node to receive SST at. DON'T SET IT TO DONOR ADDRESS!!!
+# (SST method dependent. Defaults to the first IP of the first interface)
+#wsrep_sst_receive_address=
+
+# SST authentication string. This will be used to send SST to joining nodes.
+# Depends on SST method. For mysqldump method it is root:<root password>
+# IMPORTANT: The user/password in wsrep_sst_auth must match
+# user/password in [xtrabackup]
+wsrep_sst_auth=repuser:repuserpass
+
+# Desired SST donor name.
+#wsrep_sst_donor=
+
+# Protocol version to use
+# wsrep_protocol_version=
+
+[MYSQL]
+socket=/var/lib/mysql/mysql.sock
+# default_character_set = utf8
+[client]
+socket=/var/lib/mysql/mysql.sock
+# default_character_set = utf8
+
+[mysqldump]
+max_allowed_packet = 512M
+# default_character_set = utf8
+user=repuser
+password=repuserpass
+
+# IMPORTANT: The user/password in wsrep_sst_auth must match
+# user/password in [xtrabackup]
+[xtrabackup]
+user=repuser
+password=repuserpass
+ssl=0
+
+[MYSQLD_SAFE]
+# log_error = /var/log/mysqld.log
+basedir=/usr/
+# datadir = /var/lib/mysql
+### END OF my.cnf FILE ###
+
+30/ join db3 node to the cluster
+mkdir -p /var/log/mysql
+chown mysql:mysql /var/log/mysql
+systemctl enable mysql
+systemctl start mysql &
+tail -f /var/log/mysql/mysqld.log
+
