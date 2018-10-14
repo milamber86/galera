@@ -2,7 +2,7 @@
 
 1/ prequisities, hosts, IPs, users:
 - 3 centos7 servers for database nodes with basic OS installation and epel repo enabled
-- 2 centos7 servers for loadbalancer nodes with basic OS installation
+- 2 centos7 servers for loadbalancer nodes with basic OS installation and epel repo enabled
 - in this manual we will have these servers with following IPs and users - example passwords:
 
 10.0.0.1 - db1 ( database node 1 )
@@ -11,6 +11,8 @@
 10.0.0.8 - lb1 ( database lodbalancer 1 )
 10.0.0.9 - lb2 ( database lodbalancer 2 )
 10.0.0.10 - lb vip ( virtual HA IP for application access )
+192.168.1.11 - icewarp app 1
+192.168.1.12 - icewarp app 2
 
 root - rootpass ( mysql root user )
 max - maxpass ( maxscale db balancer monitor user )
@@ -295,8 +297,16 @@ echo "[client]" >> /root/.my.cnf
 echo "user=root" >> /root/.my.cnf
 echo "password=rootpass" >> /root/.my.cnf
 
-12/ create grants for maxscale lb monitor user
+12/ create databases, grants for maxscale lb monitor user and application user
 mysql
+
+create database iwacc default charset utf8 collate utf8_general_ci; ( accounts )
+create database iwasp default charset utf8 collate utf8_general_ci; ( antispam )
+create database iwgrw default charset utf8 collate utf8_general_ci; ( groupware )
+create database iwwc default charset utf8 collate utf8_general_ci;  ( webclient )
+create database iweas default charset utf8 collate utf8_general_ci; ( activesync )
+create database iwdc default charset utf8 collate utf8_bin;         ( directory cache )
+
 create user 'max'@'10.0.0.8' identified by 'maxpass';
 create user 'max'@'10.0.0.9' identified by 'maxpass';
 create user 'max'@'10.0.0.10' identified by ',maxpass';
@@ -315,6 +325,35 @@ grant SHOW DATABASES ON *.* to 'max'@'10.0.0.10';
 grant REPLICATION SLAVE on *.* to 'max'@'10.0.0.8';
 grant REPLICATION SLAVE on *.* to 'max'@'10.0.0.9';
 grant REPLICATION SLAVE on *.* to 'max'@'10.0.0.10';
+
+grant all privileges on iwacc.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwasp.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwgrw.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iweas.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwwc.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwdc.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+
+grant all privileges on iwacc.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwasp.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwgrw.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iweas.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwwc.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+grant all privileges on iwdc.* to 'iwdb'@'192.168.1.11' identified by 'iwdbpass';
+
+grant all privileges on iwacc.* to 'iwdb'@'10.0.0.8' identified by 'iwdbpass';
+grant all privileges on iwasp.* to 'iwdb'@'10.0.0.8' identified by 'iwdbpass';
+grant all privileges on iwgrw.* to 'iwdb'@'10.0.0.8' identified by 'iwdbpass';
+grant all privileges on iweas.* to 'iwdb'@'10.0.0.8' identified by 'iwdbpass';
+grant all privileges on iwwc.* to 'iwdb'@'10.0.0.8' identified by 'iwdbpass';
+grant all privileges on iwdc.* to 'iwdb'@'10.0.0.8' identified by 'iwdbpass';
+
+grant all privileges on iwacc.* to 'iwdb'@'10.0.0.9' identified by 'iwdbpass';
+grant all privileges on iwasp.* to 'iwdb'@'10.0.0.9' identified by 'iwdbpass';
+grant all privileges on iwgrw.* to 'iwdb'@'10.0.0.9' identified by 'iwdbpass';
+grant all privileges on iweas.* to 'iwdb'@'10.0.0.9' identified by 'iwdbpass';
+grant all privileges on iwwc.* to 'iwdb'@'10.0.0.9' identified by 'iwdbpass';
+grant all privileges on iwdc.* to 'iwdb'@'10.0.0.9' identified by 'iwdbpass';
+
 flush privileges;
 quit;
 
@@ -589,12 +628,20 @@ systemctl enable mysql
 systemctl start mysql &
 tail -f /var/log/mysql/mysqld.log
 
-22/ continue with db3 node
+22/ once the db2 node is joined to the cluster, go back to the db1 node and change /etc/my.cnf
+from
+wsrep_cluster_address=gcomm://
+#wsrep_cluster_address=gcomm://10.0.0.1:4567,10.0.0.2:4567,10.0.0.3:4567
+to
+#wsrep_cluster_address=gcomm://
+wsrep_cluster_address=gcomm://10.0.0.1:4567,10.0.0.2:4567,10.0.0.3:4567
+
+23/ continue with db3 node
 - update and install tools:
 yum -y update
 yum -y install vim nano wget rsync socat epel-release ntp
 
-23/ generate rsa key for node and exchange keys between db1 and db2 nodes:
+24/ generate rsa key for node and exchange keys between db1 and db2 nodes:
 ssh-keygen -t rsa
 ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
 ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
@@ -608,15 +655,15 @@ ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.1
 ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2
 ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.3
 
-24/ enable ntpd
+25/ enable ntpd
 systemctl enable ntpd
 systemctl start ntpd
 
-25/ allow access between 10.0.0.1, 10.0.0.2, 10.0.0.3, ( database nodes ) dst 3306/tcp, 4567/tcp, 4567/udp, 4568/tcp, 4444/tcp on firewall;
+26/ allow access between 10.0.0.1, 10.0.0.2, 10.0.0.3, ( database nodes ) dst 3306/tcp, 4567/tcp, 4567/udp, 4568/tcp, 4444/tcp on firewall;
     allow access from 10.0.0.8, 10.0.0.9, 10.0.0.10 ( db loadbalancers ) to 10.0.0.1, 10.0.0.2, 10.0.0.3, ( db nodes ) dst 3306/tcp on firewall;
     allow access from client application IPs (IceWarp) to 10.0.0.8, 10.0.0.9, 10.0.0.10, ( db loadbalancers ) dst 4008/tcp on firewall;
 
-26/ setup OS limits, disable selinux
+27/ setup OS limits, disable selinux
 echo "vm.swappiness=0" >> /etc/sysctl.conf
 sysctl -w vm.swappiness=0
 
@@ -626,14 +673,14 @@ echo "* hard nofile 10240" >> /etc/security/limits.conf
 sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
 setenforce 0
 
-27/ remove potentially conflicting packages
+28/ remove potentially conflicting packages
 yum -y remove mariadb* MariaDB* mysql* MySQL*
 
-28/ install percona repository and packages
+29/ install percona repository and packages
 yum -y install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
 yum -y install Percona-XtraDB-Cluster-57 percona-toolkit percona-xtrabackup-24
 
-29/ configure /etc/my.cnf
+30/ configure /etc/my.cnf
 #
 # The Percona XtraDB Cluster 5.7 configuration file.
 #
@@ -859,10 +906,379 @@ basedir=/usr/
 # datadir = /var/lib/mysql
 ### END OF my.cnf FILE ###
 
-30/ join db3 node to the cluster
+31/ join db3 node to the cluster
 mkdir -p /var/log/mysql
 chown mysql:mysql /var/log/mysql
 systemctl enable mysql
 systemctl start mysql &
 tail -f /var/log/mysql/mysqld.log
 
+32/ setup 1st db loadbalancer lb1
+- update and install tools:
+yum -y update
+yum -y install vim nano wget rsync socat epel-release ntp
+
+33/ allow vrrp on firewall
+firewall-cmd --direct --permanent --add-rule ipv4 filter INPUT 0 --in-interface "ens160" --destination 224.0.0.18 --protocol vrrp -j ACCEPT
+firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 --out-interface "ens160" --destination 224.0.0.18 --protocol vrrp -j ACCEPT
+firewall-cmd --reload
+
+34/ allow nonlocal bind, disable selinux
+echo "net.ipv4.ip_nonlocal_bind=1" >> /etc/sysctl.conf
+sysctl -p
+sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+setenforce 0
+
+35/ install maxscale and keepalived
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
+yum -y install maxscale keepalived
+
+36/ configure maxscale in /etc/maxscale.conf
+[maxscale]
+threads=2
+
+[Galera Monitor]
+type=monitor
+module=galeramon
+servers=db1,db2,db3
+user=max
+passwd=maxpass
+monitor_interval=10000
+disable_master_failback=1
+available_when_donor=true
+
+[qla]
+type=filter
+module=qlafilter
+options=/tmp/QueryLog
+
+[fetch]
+type=filter
+module=regexfilter
+match=fetch
+replace=select
+
+[RW]
+type=service
+router=readwritesplit
+servers=db1,db2,db3
+user=max
+passwd=maxpass
+max_slave_connections=100%
+router_options=slave_selection_criteria=LEAST_CURRENT_OPERATIONS
+
+[RR]
+type=service
+router=readconnroute
+router_options=synced
+servers=db1,db2,db3
+user=max
+passwd=maxpass
+
+[DebugInterface]
+type=service
+router=debugcli
+
+[CLI]
+type=service
+router=cli
+
+[RWlistener]
+type=listener
+service=RW
+protocol=MySQLClient
+address=10.0.0.10
+port=4008
+
+[RRlistener]
+type=listener
+service=RR
+protocol=MySQLClient
+address=10.0.0.10
+port=4006
+
+[Debug Listener]
+type=listener
+service=DebugInterface
+protocol=telnetd
+address=127.0.0.1
+port=4442
+
+[CLI Listener]
+type=listener
+service=CLI
+protocol=maxscaled
+address=127.0.0.1
+port=6603
+
+[db1]
+type=server
+address=10.0.0.1
+port=3306
+protocol=MySQLBackend
+
+[db2]
+type=server
+address=10.0.0.2
+port=3306
+protocol=MySQLBackend
+
+[db3]
+type=server
+address=10.0.0.3
+port=3306
+protocol=MySQLBackend
+### END OF maxscale.conf FILE ###
+
+37/ put the /usr/local/sbin/notify-keepalived.sh in place and make it executable
+touch /usr/local/sbin/notify-keepalived.sh
+chmod u+x /usr/local/sbin/notify-keepalived.sh
+#!/bin/bash
+TYPE=$1
+NAME=$2
+STATE=$3
+case $STATE in
+        "MASTER") /usr/sbin/service maxscale restart
+                  ;;
+        "BACKUP") /usr/sbin/service maxscale stop
+                  ;;
+        "FAULT")  /usr/sbin/service maxscale stop
+                  exit 0
+                  ;;
+        *)        /sbin/logger "maxscale unknown state"
+                  exit 1
+                  ;;
+esac
+
+38/ start maxscale on lb1
+systemctl enable maxscale
+systemctl start maxscale
+systemctl status maxscale
+
+39/ configure keepalived on lb1 in /etc/keepalived/keepalived.conf
+global_defs {
+
+   notification_email {
+       alert@targetdomain.ex
+   }
+   notification_email_from node_name@customer_location_etc
+   smtp_server mail.icewarp.com_target_smtp_server
+   smtp_connect_timeout 60
+   router_id LVS_DEVEL
+}
+
+vrrp_script chk_maxscale
+{
+    script "killall -0 maxscale"
+    interval 2
+    weight 2
+}
+
+vrrp_instance VI_1
+{
+    interface eth0
+    state MASTER
+    virtual_router_id 51
+    priority 110
+    notify /usr/local/sbin/notify-keepalived.sh
+    virtual_ipaddress
+    {
+        10.0.0.10
+    }
+    track_script
+    {
+        chk_maxscale
+    }
+}
+
+40/ start keepalived
+systemctl enable keepalived
+systemctl start keepalived
+systemctl status keepalived
+
+41/ setup 2nd db loadbalancer lb2
+- update and install tools:
+yum -y update
+yum -y install vim nano wget rsync socat epel-release ntp
+
+42/ allow vrrp on firewall
+firewall-cmd --direct --permanent --add-rule ipv4 filter INPUT 0 --in-interface "eth0" --destination 224.0.0.18 --protocol vrrp -j ACCEPT
+firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 --out-interface "eth0" --destination 224.0.0.18 --protocol vrrp -j ACCEPT
+firewall-cmd --reload
+
+43/ allow nonlocal bind, disable selinux
+echo "net.ipv4.ip_nonlocal_bind=1" >> /etc/sysctl.conf
+sysctl -p
+sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+setenforce 0
+
+44/ install maxscale and keepalived
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
+yum -y install maxscale keepalived
+
+45/ configure maxscale in /etc/maxscale.conf
+[maxscale]
+threads=2
+
+[Galera Monitor]
+type=monitor
+module=galeramon
+servers=db1,db2,db3
+user=max
+passwd=maxpass
+monitor_interval=10000
+disable_master_failback=1
+available_when_donor=true
+
+[qla]
+type=filter
+module=qlafilter
+options=/tmp/QueryLog
+
+[fetch]
+type=filter
+module=regexfilter
+match=fetch
+replace=select
+
+[RW]
+type=service
+router=readwritesplit
+servers=db1,db2,db3
+user=max
+passwd=maxpass
+max_slave_connections=100%
+router_options=slave_selection_criteria=LEAST_CURRENT_OPERATIONS
+
+[RR]
+type=service
+router=readconnroute
+router_options=synced
+servers=db1,db2,db3
+user=max
+passwd=maxpass
+
+[DebugInterface]
+type=service
+router=debugcli
+
+[CLI]
+type=service
+router=cli
+
+[RWlistener]
+type=listener
+service=RW
+protocol=MySQLClient
+address=10.0.0.10
+port=4008
+
+[RRlistener]
+type=listener
+service=RR
+protocol=MySQLClient
+address=10.0.0.10
+port=4006
+
+[Debug Listener]
+type=listener
+service=DebugInterface
+protocol=telnetd
+address=127.0.0.1
+port=4442
+
+[CLI Listener]
+type=listener
+service=CLI
+protocol=maxscaled
+address=127.0.0.1
+port=6603
+
+[db1]
+type=server
+address=10.0.0.1
+port=3306
+protocol=MySQLBackend
+
+[db2]
+type=server
+address=10.0.0.2
+port=3306
+protocol=MySQLBackend
+
+[db3]
+type=server
+address=10.0.0.3
+port=3306
+protocol=MySQLBackend
+### END OF maxscale.conf FILE ###
+
+46/ put the /usr/local/sbin/notify-keepalived.sh in place and make it executable
+touch /usr/local/sbin/notify-keepalived.sh
+chmod u+x /usr/local/sbin/notify-keepalived.sh
+#!/bin/bash
+TYPE=$1
+NAME=$2
+STATE=$3
+case $STATE in
+        "MASTER") /usr/sbin/service maxscale restart
+                  ;;
+        "BACKUP") /usr/sbin/service maxscale stop
+                  ;;
+        "FAULT")  /usr/sbin/service maxscale stop
+                  exit 0
+                  ;;
+        *)        /sbin/logger "maxscale unknown state"
+                  exit 1
+                  ;;
+esac
+
+47/ start maxscale on lb2
+systemctl enable maxscale
+systemctl start maxscale
+systemctl status maxscale
+
+48/ configure keepalived on lb2 in /etc/keepalived/keepalived.conf
+global_defs {
+
+   notification_email {
+       alert@targetdomain.ex
+   }
+   notification_email_from node_name@customer_location_etc
+   smtp_server mail.icewarp.com_target_smtp_server
+   smtp_connect_timeout 60
+   router_id LVS_DEVEL
+}
+
+vrrp_script chk_maxscale
+{
+    script "killall -0 maxscale"
+    interval 2
+    weight 2
+}
+
+vrrp_instance VI_1
+{
+    interface eth0
+    state SLAVE
+    virtual_router_id 51
+    priority 90
+    notify /usr/local/sbin/notify-keepalived.sh
+    virtual_ipaddress
+    {
+        10.0.0.10
+    }
+    track_script
+    {
+        chk_maxscale
+    }
+}
+
+49/ start keepalived
+systemctl enable keepalived
+systemctl start keepalived
+systemctl status keepalived
+
+50/ all done, you should be able to login from 192.168.1.11 and 192.168.1.12 to the db cluster via loadbalancer virtual IP 10.0.0.10
+mysql -u iwdb -piwdbpass -h 10.0.0.10 -P 4008
+show databases;
