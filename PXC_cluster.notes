@@ -33,7 +33,7 @@ systemctl start ntpd
 
 5/ allow access between 10.0.0.1, 10.0.0.2, 10.0.0.3, ( database nodes ) dst 3306/tcp, 4567/tcp, 4567/udp, 4568/tcp, 4444/tcp on firewall;
    allow access from 10.0.0.8, 10.0.0.9, 10.0.0.10 ( db loadbalancers ) to 10.0.0.1, 10.0.0.2, 10.0.0.3, ( db nodes ) dst 3306/tcp on firewall;
-   allow access from client application IPs (IceWarp) to 10.0.0.8, 10.0.0.9, 10.0.0.10, ( db loadbalancers ) dst 4008/tcp on firewall;
+   allow access from 192.168.1.11, 192.168.1.12, (IceWarp) to 10.0.0.8, 10.0.0.9, 10.0.0.10, ( db loadbalancers ) dst 4008/tcp on firewall;
 
 6/ setup OS limits
 echo "vm.swappiness=0" >> /etc/sysctl.conf
