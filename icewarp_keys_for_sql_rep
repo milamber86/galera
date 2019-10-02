@@ -48,7 +48,7 @@ rename table Senders to Senders_dup;rename table Senders2 to Senders;
 drop table Senders_dup;
 
 
---Directory cache database:
+-- Directory cache database:
 use dc1;
 -- dc1:AccountCacheJournals - tam budeme muset pridat umely klic
 ALTER TABLE AccountCacheJournals ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
