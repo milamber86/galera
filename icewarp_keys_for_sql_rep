@@ -74,6 +74,55 @@ rename table DirectoryCacheSchedule to DirectoryCacheSchedule_dup;rename table D
 drop table DirectoryCacheSchedule_dup;
 
 
+
+-- ActiveSync database
+use eas1;
+-- eas1:dummy_folders - zrusit dummy_folders_index, pridat sdruzeny unique nad device_id, folder_id
+DROP TABLE IF EXISTS dummy_folders2;
+DROP TABLE IF EXISTS dummy_folders_dup;
+CREATE TABLE `dummy_folders2` like `dummy_folders`;
+ALTER TABLE `dummy_folders2` DROP KEY `dummy_folders_index`;
+ALTER TABLE `dummy_folders2` ADD PRIMARY KEY `dummy_folders_index` (`device_id`,`folder_id`);
+insert ignore dummy_folders2 select * from dummy_folders;
+rename table dummy_folders to dummy_folders_dup;rename table dummy_folders2 to dummy_folders;
+drop table dummy_folders_dup;
+
+-- eas1:Folders - zrusit folders_index, pridat sdruzeny unique nad device_id, folder_id
+DROP TABLE IF EXISTS folders2;
+DROP TABLE IF EXISTS folders_dup;
+CREATE TABLE `folders2` like folders;
+ALTER TABLE `folders2` DROP KEY `folders_index`;
+ALTER TABLE `folders2` ADD PRIMARY KEY `folders_index` (`device_id`,`folder_id`);
+insert ignore folders2 select * from folders;
+rename table folders to folders_dup;rename table folders2 to folders;
+drop table folders_dup;
+
+-- eas1:items - 
+DROP TABLE IF EXISTS items2;
+DROP TABLE IF EXISTS items_dup;
+alter table items drop `record_id`;
+CREATE TABLE `items2` like items;
+ALTER TABLE `items2` DROP KEY `items_index`;
+ALTER TABLE `items2` ADD PRIMARY KEY `items_index` (`device_id`,`folder_id`,`item_id`);
+insert ignore items2 select * from items;
+rename table items to items_dup;rename table items2 to items;
+drop table items_dup;
+
+-- eas1:push - zrusit push_index, pridat sdruzeny unique nad device_id, folder_id
+DROP TABLE IF EXISTS push2;
+DROP TABLE IF EXISTS push_dup;
+CREATE TABLE `push2` like `push`;
+ALTER TABLE `push2` DROP KEY `push_index`;
+ALTER TABLE `push2` ADD PRIMARY KEY `push_index` (`device_id`,`folder_id`);
+insert ignore push2 select * from push;
+rename table push to push_dup;rename table push2 to push;
+drop table push_dup;
+
+-- eas1:provisions - novy sdruzeny na user+device
+ALTER TABLE provisions ADD PRIMARY KEY `userdevice` (`user`,`device`);
+
+
+
 -- Groupware database ( maybe better to create a new schema using https://github.com/milamber86/galera/blob/master/calendar.xml_12202
 and migrate groupware db to it )
 use gw1;
@@ -335,50 +384,3 @@ rename table Tickets to Tickets_dup;rename table Tickets2 to Tickets;
 SET FOREIGN_KEY_CHECKS=0;
 drop table Tickets_dup;
 SET FOREIGN_KEY_CHECKS=1;
-
-
--- ActiveSync database
-use eas1;
--- eas1:dummy_folders - zrusit dummy_folders_index, pridat sdruzeny unique nad device_id, folder_id
-DROP TABLE IF EXISTS dummy_folders2;
-DROP TABLE IF EXISTS dummy_folders_dup;
-CREATE TABLE `dummy_folders2` like `dummy_folders`;
-ALTER TABLE `dummy_folders2` DROP KEY `dummy_folders_index`;
-ALTER TABLE `dummy_folders2` ADD PRIMARY KEY `dummy_folders_index` (`device_id`,`folder_id`);
-insert ignore dummy_folders2 select * from dummy_folders;
-rename table dummy_folders to dummy_folders_dup;rename table dummy_folders2 to dummy_folders;
-drop table dummy_folders_dup;
-
--- eas1:Folders - zrusit folders_index, pridat sdruzeny unique nad device_id, folder_id
-DROP TABLE IF EXISTS folders2;
-DROP TABLE IF EXISTS folders_dup;
-CREATE TABLE `folders2` like folders;
-ALTER TABLE `folders2` DROP KEY `folders_index`;
-ALTER TABLE `folders2` ADD PRIMARY KEY `folders_index` (`device_id`,`folder_id`);
-insert ignore folders2 select * from folders;
-rename table folders to folders_dup;rename table folders2 to folders;
-drop table folders_dup;
-
--- eas1:items - 
-DROP TABLE IF EXISTS items2;
-DROP TABLE IF EXISTS items_dup;
-alter table items drop `record_id`;
-CREATE TABLE `items2` like items;
-ALTER TABLE `items2` DROP KEY `items_index`;
-ALTER TABLE `items2` ADD PRIMARY KEY `items_index` (`device_id`,`folder_id`,`item_id`);
-insert ignore items2 select * from items;
-rename table items to items_dup;rename table items2 to items;
-drop table items_dup;
-
--- eas1:push - zrusit push_index, pridat sdruzeny unique nad device_id, folder_id
-DROP TABLE IF EXISTS push2;
-DROP TABLE IF EXISTS push_dup;
-CREATE TABLE `push2` like `push`;
-ALTER TABLE `push2` DROP KEY `push_index`;
-ALTER TABLE `push2` ADD PRIMARY KEY `push_index` (`device_id`,`folder_id`);
-insert ignore push2 select * from push;
-rename table push to push_dup;rename table push2 to push;
-drop table push_dup;
-
--- eas1:provisions - novy sdruzeny na user+device
-ALTER TABLE provisions ADD PRIMARY KEY `userdevice` (`user`,`device`);
