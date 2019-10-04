@@ -57,7 +57,7 @@ character_set_server = utf8mb4
 # REPLICATION SPECIFIC
 server_id=1
 binlog_format=ROW
-log_bin=/cache/mysql/binlog
+log_bin=/var/lib/mysql/binlog
 log_slave_updates=1
 expire_logs_days=3
 max_binlog_files=8
@@ -78,7 +78,7 @@ memlock=0
 sysdate_is_now=1
 max_connections=1601
 max_connect_errors=300
-thread_cache_size=1024
+thread__size=1024
 query_cache_type = 0
 query_cache_size = 0
 table_open_cache=2048
@@ -108,7 +108,7 @@ wsrep_on=ON
 wsrep_node_address=10.0.0.1
 
 # Provider specific configuration options
-wsrep_provider_options="gcache.dir=/cache/mysql/;cert.log_conflicts=yes;gcache.size=12G;gcache.page_size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gmcast.segment=0;"
+wsrep_provider_options="cert.log_conflicts=yes;gcache.size=12G;gcache.page_size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gmcast.segment=0;"
 
 # Logical cluster name. Should be the same for all nodes.
 wsrep_cluster_name="Name your database cluster HERE"
