@@ -1,0 +1,114 @@
+#
+# The Percona XtraDB Cluster 5.7 configuration file.
+#
+#
+# * IMPORTANT: Additional settings that can override those from this file!
+#   The files must end with '.cnf', otherwise they'll be ignored.
+#   Please make any edits and changes to the appropriate sectional files
+#   included below.
+#
+# !includedir /etc/my.cnf.d/
+# !includedir /etc/percona-xtradb-cluster.conf.d/
+[mysqld]
+innodb_force_recovery = 0
+pxc_strict_mode = PERMISSIVE
+old_alter_table = ON
+user=mysql
+basedir=/usr/
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+pid_file=/var/lib/mysql/mysql.pid
+port=3306
+log_error=/var/log/mysql/mysqld.log
+log_warnings=2
+log_output = FILE
+slow_query_log=1
+log_queries_not_using_indexes=1
+slow_query_log_file=/var/log/mysql/slow.log
+long_query_time=1
+### INNODB OPTIONS
+innodb_buffer_pool_size=64G  ## change according to node memory size, free -m, set up to 85% of total physical memory of the node
+innodb_flush_log_at_trx_commit=0
+innodb_file_per_table=1
+innodb_data_file_path = ibdata1:200M:autoextend
+## You may want to tune the below depending on number of cores and disk sub
+innodb_read_io_threads=8  ## set to number of node CPU cores
+innodb_write_io_threads=8  ## set to number of node CPU cores
+innodb_doublewrite=1
+innodb_log_file_size=2048M
+innodb_log_buffer_size=512M
+innodb_buffer_pool_instances=64 ## same number as in "innodb_buffer_pool_size" recommended here
+innodb_log_files_in_group=2
+innodb_thread_concurrency=64 ## same number as in "innodb_buffer_pool_size" recommended here
+# innodb_file_format = barracuda
+innodb_flush_method = O_DIRECT
+# innodb_locks_unsafe_for_binlog = 1
+innodb_autoinc_lock_mode=2
+## avoid statistics update when doing e.g show tables
+innodb_stats_on_metadata=0
+default_storage_engine=InnoDB
+open-files-limit=331072
+
+# CHARACTER SET
+collation_server = utf8mb4_general_ci ## set according to application language preferences
+init_connect='SET NAMES utf8mb4'
+character_set_server = utf8mb4
+
+# REPLICATION SPECIFIC
+server_id=1
+binlog_format=ROW
+log_bin=/var/lib/mysql/binlog
+log_slave_updates=1
+expire_logs_days=3
+max_binlog_files=8
+# relay_log = relay-bin
+
+# OTHER THINGS, BUFFERS ETC
+key_buffer_size = 24M
+tmp_table_size = 64M
+max_heap_table_size = 64M
+max_allowed_packet = 1073741824
+join_buffer_size = 32M
+sort_buffer_size = 2M
+read_buffer_size = 512K
+read_rnd_buffer_size = 1M
+# myisam_sort_buffer_size = 8M
+skip_name_resolve
+memlock=0
+sysdate_is_now=1
+max_connections=1601
+max_connect_errors=300
+thread__size=1024
+query_cache_type = 0
+query_cache_size = 0
+table_open_cache=2048
+lower_case_table_names=1
+#
+binlog_cache_size=1048900
+binlog_stmt_cache_size=1048900
+table_definition_cache=10000
+wait_timeout=93600
+connect_timeout=30
+net_read_timeout=180
+net_write_timeout=360
+
+performance_schema = ON
+performance-schema-max-mutex-classes = 0
+performance-schema-max-mutex-instances = 0
+
+[MYSQL]
+socket=/var/lib/mysql/mysql.sock
+# default_character_set = utf8
+[client]
+socket=/var/lib/mysql/mysql.sock
+# default_character_set = utf8
+
+[MYSQLD_SAFE]
+# log_error = /var/log/mysqld.log
+basedir=/usr/
+# datadir = /var/lib/mysql
+### END OF my.cnf FILE ###[MYSQLD_SAFE]
+# log_error = /var/log/mysqld.log
+basedir=/usr/
+# datadir = /var/lib/mysql
+### END OF my.cnf FILE ###
