@@ -105,7 +105,7 @@ performance-schema-max-mutex-instances = 0
 # Full path to wsrep provider library or 'none'
 wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
 wsrep_on=ON
-wsrep_node_address=10.0.0.1
+wsrep_node_address=10.0.0.1 # actual node IP
 
 # Provider specific configuration options
 wsrep_provider_options="cert.log_conflicts=yes;gcache.size=12G;gcache.page_size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gmcast.segment=0;"
@@ -118,7 +118,7 @@ wsrep_cluster_address=gcomm://
 #wsrep_cluster_address=gcomm://10.0.0.1:4567,10.0.0.2:4567,10.0.0.3:4567
 
 # Human_readable node name (non-unique). Hostname by default.
-wsrep_node_name=10.0.0.1
+wsrep_node_name=10.0.0.1 # actual node IP
 
 # Address for incoming client connections. Autodetect by default.
 #wsrep_node_incoming_address=
