@@ -79,7 +79,7 @@ vrrp_instance VI_1 {
     ! any IP addresses
 
         virtual_ipaddress {
-                192.168.1.70
+                10.0.0.50
         ! and more if you want them
         }
 }
@@ -101,7 +101,7 @@ vrrp_instance VI_GATEWAY {
                 auth_pass somepass
         }
         virtual_ipaddress {
-                10.1.1.70
+                192.168.1.50
         }
 }
 
@@ -112,7 +112,7 @@ vrrp_instance VI_GATEWAY {
 ! on that IP, and nothing else.
 
 
-virtual_server 192.168.1.70 25 {
+virtual_server 10.0.0.50 25 {
     delay_loop 6
 
     ! use round-robin as a load balancing algorithm
@@ -126,7 +126,7 @@ virtual_server 192.168.1.70 25 {
 
     ! there can be as many real_server blocks as you need
 
-    real_server 10.1.1.10 25 {
+    real_server 192.168.1.11 25 {
 
     ! if we used weighted round-robin or a similar lb algo,
     ! we include the weight of this server
@@ -144,7 +144,7 @@ virtual_server 192.168.1.70 25 {
         connect_port 25
         }
     }
-    real_server 10.1.1.11 25 {
+    real_server 192.168.1.12 25 {
 
     ! if we used weighted round-robin or a similar lb algo,
     ! we include the weight of this server
@@ -164,20 +164,20 @@ virtual_server 192.168.1.70 25 {
     }
 }
 
-virtual_server 192.168.1.70 465 {
+virtual_server 10.0.0.50 465 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 465 {
+    real_server 192.168.1.11 465 {
         weight 1
         TCP_CHECK {
                	connect_timeout 3
        	connect_port 465
         }
     }
-    real_server 10.1.1.11 465 {
+    real_server 192.168.1.12 465 {
        	weight 1
         TCP_CHECK {
                	connect_timeout 3
@@ -186,20 +186,20 @@ virtual_server 192.168.1.70 465 {
     }
 }
 
-virtual_server 192.168.1.70 587 {
+virtual_server 10.0.0.50 587 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 587 {
+    real_server 192.168.1.11 587 {
         weight 1
         TCP_CHECK {
                	connect_timeout 3
        	connect_port 587
         }
     }
-    real_server 10.1.1.11 587 {
+    real_server 192.168.1.12 587 {
        	weight 1
         TCP_CHECK {
                	connect_timeout 3
@@ -208,20 +208,20 @@ virtual_server 192.168.1.70 587 {
     }
 }
 
-virtual_server 192.168.1.70 143 {
+virtual_server 10.0.0.50 143 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 143 {
+    real_server 192.168.1.11 143 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
         connect_port 143
       	}
     }
-    real_server	10.1.1.11 143 {
+    real_server	192.168.1.12 143 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
@@ -230,20 +230,20 @@ virtual_server 192.168.1.70 143 {
     }
 }
 
-virtual_server 192.168.1.70 993 {
+virtual_server 10.0.0.50 993 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 993 {
+    real_server 192.168.1.11 993 {
         weight 1
         TCP_CHECK {
                	connect_timeout 3
        	connect_port 993
         }
     }
-    real_server 10.1.1.11 993 {
+    real_server 192.168.1.12 993 {
        	weight 1
         TCP_CHECK {
                	connect_timeout 3
@@ -252,20 +252,20 @@ virtual_server 192.168.1.70 993 {
     }
 }
 
-virtual_server 192.168.1.70 5222 {
+virtual_server 10.0.0.50 5222 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 5222 {
+    real_server 192.168.1.11 5222 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
         connect_port 5222
         }
     }
-    real_server 10.1.1.11 5222 {
+    real_server 192.168.1.12 5222 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
@@ -274,20 +274,20 @@ virtual_server 192.168.1.70 5222 {
     }
 }
 
-virtual_server 192.168.1.70 5223 {
+virtual_server 10.0.0.50 5223 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 5223 {
+    real_server 192.168.1.11 5223 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
         connect_port 5223
         }
     }
-    real_server 10.1.1.11 5223 {
+    real_server 192.168.1.12 5223 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
@@ -296,14 +296,14 @@ virtual_server 192.168.1.70 5223 {
     }
 }
 
-virtual_server 192.168.1.70 80 {
+virtual_server 10.0.0.50 80 {
     delay_loop 10
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
     virtualhost mail.example.loc
-    real_server 10.1.1.10 80 {
+    real_server 192.168.1.11 80 {
         weight 1
         HTTP_GET {
 		url {
@@ -316,7 +316,7 @@ virtual_server 192.168.1.70 80 {
 	delay_before_retry 10
       	}
     }
-    real_server	10.1.1.11 80 {
+    real_server	192.168.1.12 80 {
         weight 1
         HTTP_GET {
 		   url {
@@ -331,14 +331,14 @@ virtual_server 192.168.1.70 80 {
     }
 }
 
-virtual_server 192.168.1.70 443 {
+virtual_server 10.0.0.50 443 {
     delay_loop 10
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
     virtualhost	mail.example.loc
-    real_server 10.1.1.10 443 {
+    real_server 192.168.1.11 443 {
        	weight 1
 	SSL_GET {
                 url {
@@ -351,7 +351,7 @@ virtual_server 192.168.1.70 443 {
         delay_before_retry 10
        	}
     }
-    real_server 10.1.1.11 443 {
+    real_server 192.168.1.12 443 {
        	weight 1
         SSL_GET {
                    url {
@@ -366,13 +366,13 @@ virtual_server 192.168.1.70 443 {
     }
 }
 
-virtual_server 192.168.1.70 44310 {
+virtual_server 10.0.0.50 44310 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.10 443 {
+    real_server 192.168.1.11 443 {
         weight 1
         TCP_CHECK {
                	connect_timeout 3
@@ -381,13 +381,13 @@ virtual_server 192.168.1.70 44310 {
     }
 }
 
-virtual_server 192.168.1.70 44311 {
+virtual_server 10.0.0.50 44311 {
     delay_loop 6
     lb_algo rr
     lb_kind NAT
     nat_mask 255.255.255.0
     protocol TCP
-    real_server 10.1.1.11 443 {
+    real_server 192.168.1.12 443 {
         weight 1
         TCP_CHECK {
                 connect_timeout 3
