@@ -1,0 +1,66 @@
+### iptables cfg example for keepalived	loadbalancer ###
+###
+# loadbalancer 1, external interface IP	10.0.0.48, internal interface IP 192.168.1.48
+# loadbalancer VIP floating between loadbalancer 1 and loadbalancer 2, external 10.0.0.50, internal 192.168.1.50
+# ( 192.168.1.50 is default GW for backend IceWarp servers )
+# IceWarp backend servers have internal	IPs 192.168.1.11 and 192.168.1.12, network 192.168.1.0/24
+###
+###
+*nat
+:PREROUTING ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+# MASQUERADE for load balancing:
+-A POSTROUTING -o ens3 -s 192.168.1.0/24 -j SNAT --to 10.0.0.50
+:OUTPUT ACCEPT [0:0]
+COMMIT
+###
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+# To act as a gateway:
+-A FORWARD -d 192.168.1.0/24 -j ACCEPT
+:OUTPUT ACCEPT [0:0]
+:RH-Firewall-1-INPUT - [0:0]
+:SSH-FLOOD - [0:0]
+:SSH-ALLOW - [0:0]
+# Pass all inbound traffic to RH-Firewall-1-INPUT
+-A INPUT -j RH-Firewall-1-INPUT
+-A FORWARD -j RH-Firewall-1-INPUT
+###
+# Start Rules:
+###
+# keepalived VRRP:
+-A RH-Firewall-1-INPUT -s 10.0.0.48/32 -d 224.0.0.0/8 -j ACCEPT
+-A RH-Firewall-1-INPUT -s 10.0.0.49/32 -d 224.0.0.0/8 -j ACCEPT
+-A RH-Firewall-1-INPUT -s 192.168.1.48/32 -d 224.0.0.0/8 -j ACCEPT
+-A RH-Firewall-1-INPUT -s 192.168.1.49/32 -d 224.0.0.0/8 -j ACCEPT
+# IceWarp service ports
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 25 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 465 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 587 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 143 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 993 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 110 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 995 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 5222 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 5223 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 5229 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 44310 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 44311 -j ACCEPT
+# SSH, slow down ssh connections to reduce brute force attacks.
+-A RH-Firewall-1-INPUT -d 10.0.0.48 -p tcp -m tcp --dport 22 -m state --state NEW -j SSH-FLOOD
+# ssh flood rules:
+-A SSH-FLOOD -m limit --limit 2/minute --limit-burst 2 -j SSH-ALLOW
+-A SSH-FLOOD -j DROP
+# if not a flood accept:
+-A SSH-ALLOW -p tcp -m tcp --dport 22 -j ACCEPT
+# Default rules
+-A RH-Firewall-1-INPUT -i lo -j ACCEPT
+-A RH-Firewall-1-INPUT -p icmp -m icmp --icmp-type any -j ACCEPT
+-A RH-Firewall-1-INPUT -d 224.0.0.251 -p udp -m udp --dport 5353 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A RH-Firewall-1-INPUT -j REJECT --reject-with icmp-host-prohibited
+COMMIT
+### EOF	###
