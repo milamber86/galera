@@ -19,6 +19,13 @@ global_defs {
    lvs_id LVS_IW1_EXAMPLE_LOC
 }
 
+vrrp_script chk_haproxy
+{
+    script "killall -0 haproxy"
+    interval 2
+    weight 2
+}
+
 ! vrrp_sync_groups make sure that several router instances
 ! stay together on a failure - a good example of this is
 ! that the external interface on one router fails and the backup server
