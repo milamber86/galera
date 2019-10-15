@@ -1,0 +1,124 @@
+global
+        log         127.0.0.1 local0 debug
+        chroot      /var/lib/haproxy
+        pidfile     /var/run/haproxy.pid
+        daemon
+        stats socket /var/lib/haproxy/stats uid hatop gid hatop mode 0600
+
+defaults
+        mode                    tcp
+        log                     global
+        option                  tcplog
+        option                  dontlognull
+        option                  redispatch
+        retries                 3
+        timeout queue           1m
+        timeout connect         10s
+        timeout client          1m
+        timeout server          1m
+        timeout check           10s
+        maxconn                 3000
+        balance                 leastconn
+
+frontend f_http
+    bind 10.0.0.50:80 transparent
+    default_backend b_http
+backend b_http
+    stick-table type ip size 1m expire 10h
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:80 check
+    server iw2 192.168.1.11:80 check
+
+frontend f_https
+    bind 10.0.0.50:443 transparent
+    default_backend b_https
+backend b_https
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    option ssl-hello-chk
+    server iw1 192.168.1.10:443 check-ssl verify none
+    server iw2 192.168.1.11:443 check-ssl verify none
+
+frontend f_smtp
+    bind 10.0.0.50:25 transparent
+    default_backend b_smtp
+backend b_smtp
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:25 check
+    server iw2 192.168.1.11:25 check
+
+frontend f_smtps
+    bind 10.0.0.50:465 transparent
+    default_backend b_smtps
+backend b_smtps
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    option ssl-hello-chk
+    server iw1 192.168.1.10:465 check-ssl verify none
+    server iw2 192.168.1.11:465 check-ssl verify none
+
+frontend f_submission
+    bind 10.0.0.50:587 transparent
+    default_backend b_submission
+backend b_submission
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:587 check
+    server iw2 192.168.1.11:587 check
+
+frontend f_imap
+    bind 10.0.0.50:143 transparent
+    default_backend b_imap
+backend b_imap
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:143 check
+    server iw2 192.168.1.11:143 check
+
+frontend f_imaps
+    bind 10.0.0.50:993 transparent
+    default_backend b_imaps
+backend b_imaps
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    option ssl-hello-chk
+    server iw1 192.168.1.10:993 check-ssl verify none
+    server iw2 192.168.1.11:993 check-ssl verify none
+
+frontend f_xmpps
+    bind 10.0.0.50:5222 transparent
+    default_backend b_xmpps
+backend b_xmpps
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:5222 check
+    server iw2 192.168.1.11:5222 check
+
+frontend f_xmppc
+    bind 10.0.0.50:5223 transparent
+    default_backend b_xmppc
+backend b_xmppc
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    option ssl-hello-chk
+    server iw1 192.168.1.10:5223 check-ssl verify none
+    server iw2 192.168.1.11:5223 check-ssl verify none
+
+frontend f_groupware
+    bind 10.0.0.50:5229 transparent
+    default_backend b_groupware
+backend b_groupware
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:5229 check
+    server iw2 192.168.1.11:5229 check
+
+frontend f_groupware_push
+    bind 10.0.0.50:32002 transparent
+    default_backend b_groupware_push
+backend b_groupware_push
+    stick on src table b_http
+    source 0.0.0.0 usesrc clientip
+    server iw1 192.168.1.10:32002 check
+    server iw2 192.168.1.11:32002 check
