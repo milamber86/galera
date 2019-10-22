@@ -59,7 +59,7 @@ PRIMARY KEY APITokenIndex (TOK_ID)
 <CREATETABLE>Create Table TeamchatPlugin (
 TP_ID %%varchar%%(255) NOT NULL,
 TpToken %%varchar%%(255),
-TpEnabled int,
+TpEnabled int, 
 TpMetaData %%text%%,
 PRIMARY KEY TPIndex (TP_ID)
 )
@@ -102,7 +102,7 @@ GrpTChDailyNotify int default 0,
 GrpTChMentionNotify int default 1,
 GrpTChPinNotify int default 1,
 GrpTChUploadNotify int default 1,
-PRIMARY KEY GroupOwnerIndex (GRP_ID,GRPOWN_ID)
+PRIMARY KEY GroupOwnerIndex (GRP_ID)
 )
 </CREATETABLE>
 
@@ -124,7 +124,7 @@ Fdr_LastGlobalPin %%bigint%%,
 Fdr_LastActivity %%bigint%%,
 FdrSubType %%varchar%%(1),
 Fdr_MetaData %%text%%,
-PRIMARY KEY FolderIndex (FDR_ID,FDRGRP_ID)
+PRIMARY KEY FolderIndex (FDRGRP_ID,FDR_ID)
 )
 </CREATETABLE>
 
@@ -136,7 +136,7 @@ FrtRight int,
 PRIMARY KEY FolderRightGroupEmailIndex (FRTGRP_ID,FrtEmail,FRTFDR_ID)
 )
 </CREATETABLE>
-
+                               
 <CREATETABLE>Create Table GroupChatUnread (
 GCUOWN_ID %%varchar%%(12) NOT NULL,
 GCUGRP_ID %%varchar%%(12) NOT NULL,
@@ -150,37 +150,37 @@ PRIMARY KEY GroupChatUnreadIndex (GCUOWN_ID,GCUGRP_ID,GCUFDR_ID)
 </CREATETABLE>
 
 <CREATETABLE>Create Table Event (
-EVN_ID %%varchar%%(12) NOT NULL,
-EVNGRP_ID %%varchar%%(12) NOT NULL,
+EVN_ID %%varchar%%(12) NOT NULL, 
+EVNGRP_ID %%varchar%%(12) NOT NULL, 
 EVNOWN_ID %%varchar%%(12),
-EVNRCR_ID %%varchar%%(12),
+EVNRCR_ID %%varchar%%(12), 
 EvnLockOWN_ID %%varchar%%(12),
 EvnModifiedOWN_ID %%varchar%%(12),
-Evn_EditCounter int,
+Evn_EditCounter int, 
 Evn_Created int,
 Evn_Modified int,
 Evn_Deleted int,
 EvnFolder %%varchar%%(255) NOT NULL,
 EvnOriginalFolder %%varchar%%(255),
 EvnTitle %%varchar%%(510),
-EvnNote %%text%%,
+EvnNote %%text%%, 
 EvnDescFormat %%varchar%%(80),
-EvnLocation %%varchar%%(510),
+EvnLocation %%varchar%%(510), 
 EvnPriority int,
 EvnComplete int,
 EvnCompleted int,
 EvnColor %%varchar%%(2),
-EvnClass %%varchar%%(1),
-EvnShareType %%varchar%%(1),
-EvnTimeFormat %%varchar%%(1),
-EvnType %%varchar%%(127),
-EvnStatus %%varchar%%(1),
+EvnClass %%varchar%%(1), 
+EvnShareType %%varchar%%(1), 
+EvnTimeFormat %%varchar%%(1), 
+EvnType %%varchar%%(127), 
+EvnStatus %%varchar%%(1), 
 EvnOrganizer %%varchar%%(255),
 EvnContact %%varchar%%(80),
 EvnURL %%varchar%%(255),
-EvnStartDate int,
-EvnStartTime int,
-EvnEndDate int,
+EvnStartDate int, 
+EvnStartTime int, 
+EvnEndDate int, 
 EvnEndTime int,
 EvnRID %%varchar%%(255),
 EvnUID %%varchar%%(255),
@@ -211,20 +211,20 @@ RmnActionType %%varchar%%(1),
 RmnActionValue %%varchar%%(120),
 RmnLastAck %%bigint%%,
 RmnTime %%bigint%%,
-PRIMARY KEY RMNIndex (RMN_ID,RMNEVN_ID)
+PRIMARY KEY RMNIndex (RMN_ID)
 )
 </CREATETABLE>
 
 <CREATETABLE>
 <ITEM>Create Table EventMyReaction (
 REAEVN_ID %%varchar%%(12) NOT NULL,
-REAGRP_ID %%varchar%%(12),
+REAGRP_ID %%varchar%%(12), 
 REA_FOLDER %%varchar%%(255),
 REAOWN_ID %%varchar%%(12) NOT NULL,
 ReaValue %%varchar%%(128),
 ReaOwnEmail %%varchar%%(128),
 ReaOwnName %%varchar%%(128),
-PRIMARY KEY REAOWN_ID (REAOWN_ID,REAEVN_ID),
+PRIMARY KEY REAOWN_ID (REAEVN_ID,REAOWN_ID),
 FOREIGN KEY(REAGRP_ID,REA_FOLDER,REAEVN_ID) REFERENCES Event(EVNGRP_ID, EvnFolder,EVN_ID) ON DELETE CASCADE</ITEM><ITEM DB="!oracle"> ON UPDATE CASCADE</ITEM>
 <ITEM>)</ITEM>
 </CREATETABLE>
@@ -233,7 +233,7 @@ FOREIGN KEY(REAGRP_ID,REA_FOLDER,REAEVN_ID) REFERENCES Event(EVNGRP_ID, EvnFolde
 <ITEM>Create Table EventMyMention (
 MEN_ID %%varchar%%(12),
 MENEVN_ID %%varchar%%(12) NOT NULL,
-MENGRP_ID %%varchar%%(12),
+MENGRP_ID %%varchar%%(12), 
 MEN_FOLDER %%varchar%%(255),
 MENWHOOWN_ID %%varchar%%(12),
 MenWhoOwnEmail %%varchar%%(128),
@@ -252,7 +252,7 @@ FOREIGN KEY(MENGRP_ID,MEN_FOLDER,MENEVN_ID) REFERENCES Event(EVNGRP_ID, EvnFolde
 <ITEM>Create Table EventPin (
 PIN_ID %%varchar%%(12) NOT NULL,
 PINEVN_ID %%varchar%%(12),
-PINGRP_ID %%varchar%%(12),
+PINGRP_ID %%varchar%%(12), 
 PIN_FOLDER %%varchar%%(255),
 PINOWN_ID %%varchar%%(12),
 PinOwnEmail %%varchar%%(128),
@@ -269,7 +269,7 @@ FOREIGN KEY(PINGRP_ID,PIN_FOLDER,PINEVN_ID) REFERENCES Event(EVNGRP_ID, EvnFolde
 <ITEM>Create Table GlobalEventPin (
 PIN_ID %%varchar%%(12),
 PINEVN_ID %%varchar%%(12) NOT NULL,
-PINGRP_ID %%varchar%%(12),
+PINGRP_ID %%varchar%%(12), 
 PIN_FOLDER %%varchar%%(255),
 PINOWN_ID %%varchar%%(12),
 PinOwnEmail %%varchar%%(128),
@@ -285,7 +285,7 @@ FOREIGN KEY(PINGRP_ID,PIN_FOLDER,PINEVN_ID) REFERENCES Event(EVNGRP_ID, EvnFolde
 <CREATETABLE>
 <ITEM>Create Table EventComment (
 COMEVN_ID %%varchar%%(12) NOT NULL,
-COMGRP_ID %%varchar%%(12),
+COMGRP_ID %%varchar%%(12), 
 COM_FOLDER %%varchar%%(255),
 COMOWN_ID %%varchar%%(12) NOT NULL,
 ComCount int,
@@ -370,7 +370,7 @@ CntRSVP %%varchar%%(1),
 CntExpect %%varchar%%(1),
 CntAgent %%varchar%%(1),
 CntSentBy %%varchar%%(120),
-PRIMARY KEY ContactIndex (CNT_ID,CNTEVN_ID)
+PRIMARY KEY EventContactIndex (CNT_ID)
 )
 </CREATETABLE>
 
@@ -384,7 +384,7 @@ PRIMARY KEY HolidayIndex (HOLOWN_ID,HolHolidayID)
 
 <COMMENT>Contact Objects</COMMENT>
 
-<CREATETABLE>Create Table ContactItem
+<CREATETABLE>Create Table ContactItem 
 (
 ITM_ID %%varchar%%(12) NOT NULL,
 ITMGRP_ID %%varchar%%(12),
@@ -399,7 +399,7 @@ ItmFolder %%varchar%%(255),
 ItmOriginalFolder %%varchar%%(255),
 ItmShareType %%varchar%%(1),
 ItmCategory %%varchar%%(128),
-ItmClass %%varchar%%(1),
+ItmClass %%varchar%%(1), 
 ItmTitle %%varchar%%(32),
 ItmFirstName %%varchar%%(64),
 ItmMiddleName %%varchar%%(64),
@@ -470,7 +470,7 @@ LctPhnPrimary %%varchar%%(64),
 LctPhnRadio %%varchar%%(64),
 LctPhnTelex %%varchar%%(64),
 LctPhnHearing %%varchar%%(64),
-PRIMARY KEY ContactLocationItemIndex (LCT_ID,LCTITM_ID)
+PRIMARY KEY ContactLocationItemIndex (LCT_ID)
 )
 </CREATETABLE>
 
@@ -497,7 +497,7 @@ TAG_ID %%varchar%%(12) NOT NULL,
 TAGGRP_ID %%varchar%%(12) NOT NULL,
 TagName %%varchar%%(255),
 TagColor %%varchar%%(12),
-PRIMARY KEY TagIDIndex (TAGGRP_ID,TAG_ID)
+PRIMARY KEY TagIDIndex (TAG_ID)
 )
 </CREATETABLE>
 
@@ -614,10 +614,10 @@ PRIMARY KEY TicketIDIndex (TCK_ID)
 CREATE OR REPLACE TRIGGER event_update
  AFTER UPDATE OF EVNGRP_ID, EvnFolder,EVN_ID ON Event FOR EACH ROW
 BEGIN
-    UPDATE EventMyMention SET  MEN_FOLDER = :new.EvnFolder, MENGRP_ID=:new.EVNGRP_ID, MENEVN_ID=:new.EVN_ID WHERE MENEVN_ID = :old.EVN_ID;
-    UPDATE EventPin SET PIN_FOLDER = :new.EvnFolder, PINGRP_ID=:new.EVNGRP_ID, PINEVN_ID=:new.EVN_ID WHERE PINEVN_ID = :old.EVN_ID;
-    UPDATE GlobalEventPin SET PIN_FOLDER = :new.EvnFolder, PINGRP_ID=:new.EVNGRP_ID, PINEVN_ID=:new.EVN_ID WHERE PINEVN_ID = :old.EVN_ID;
-    UPDATE EventMyReaction SET REA_FOLDER = :new.EvnFolder, REAGRP_ID=:new.EVNGRP_ID, REAEVN_ID=:new.EVN_ID WHERE REAEVN_ID = :old.EVN_ID;
+    UPDATE EventMyMention SET  MEN_FOLDER = :new.EvnFolder, MENGRP_ID=:new.EVNGRP_ID, MENEVN_ID=:new.EVN_ID WHERE MENEVN_ID = :old.EVN_ID;   
+    UPDATE EventPin SET PIN_FOLDER = :new.EvnFolder, PINGRP_ID=:new.EVNGRP_ID, PINEVN_ID=:new.EVN_ID WHERE PINEVN_ID = :old.EVN_ID;        
+    UPDATE GlobalEventPin SET PIN_FOLDER = :new.EvnFolder, PINGRP_ID=:new.EVNGRP_ID, PINEVN_ID=:new.EVN_ID WHERE PINEVN_ID = :old.EVN_ID;    
+    UPDATE EventMyReaction SET REA_FOLDER = :new.EvnFolder, REAGRP_ID=:new.EVNGRP_ID, REAEVN_ID=:new.EVN_ID WHERE REAEVN_ID = :old.EVN_ID;    
     UPDATE EventComment SET COM_FOLDER = :new.EvnFolder, COMGRP_ID=:new.EVNGRP_ID, COMEVN_ID=:new.EVN_ID WHERE COMEVN_ID = :old.EVN_ID;
     UPDATE OnlineDocumentEditing SET ODE_FOLDER = :new.EvnFolder, ODEGRP_ID=:new.EVNGRP_ID, ODEEVN_ID=:new.EVN_ID WHERE ODEVN_ID = :old.EVN_ID;
 END;
@@ -668,8 +668,8 @@ END;
 <DELETETEAMCHATPLUGIN>DELETE FROM TeamchatPlugin WHERE TP_ID = '%s'</DELETETEAMCHATPLUGIN>
 
 <GROUPLIST>
-<ITEM>Select GRP_ID, GrpTitle, GrpLink, GrpLinkFolder, GrpGlobal, GrpDailyEvents,
-  GrpDailyEventsEmail, GrpReminderEmail, GrpRemindersDisabled, GrpTChDailyNotify,
+<ITEM>Select GRP_ID, GrpTitle, GrpLink, GrpLinkFolder, GrpGlobal, GrpDailyEvents, 
+  GrpDailyEventsEmail, GrpReminderEmail, GrpRemindersDisabled, GrpTChDailyNotify, 
   GrpTChMentionNotify, GrpTChPinNotify, GrpTChUploadNotify
   From EventGroup Where GRPOWN_ID = '%s' ORDER BY GrpTitle</ITEM>
 <ITEM DB="oracle"> NULLS FIRST</ITEM>
@@ -797,8 +797,8 @@ Select 'C' As ItmType FROM ContactItem Where (ITM_ID = '%0:s')
 
 <JOINABLEEVENTLIST>Select%s EVN_ID, EVNGRP_ID, EVNRCR_ID, EVNOWN_ID, EvnLockOWN_ID, EvnModifiedOWN_ID,
 EvnShareType,
-EvnStartDate,
-EvnStartTime,
+EvnStartDate, 
+EvnStartTime, 
 EvnEndDate,
 EvnEndTime,
 EvnTimeFormat,
@@ -817,7 +817,7 @@ Evn_EditCounter %s From Event %s Where %s</JOINABLEEVENTLIST>
 <EVENTDETAILLIST>
 <ITEM>Select EVN_ID, EVNGRP_ID, EVNRCR_ID, EVNOWN_ID, EvnLockOWN_ID, '' As EvnLockOWN_Email, '' As EvnLockOWN_Name, EvnModifiedOWN_ID, EvnShareType, EvnStartDate, EvnStartTime, EvnEndDate, EvnEndTime, EvnTimeFormat,EvnClass %s From </ITEM>
 <ITEM DB="!sqlite">(</ITEM>
-<ITEM>Event
+<ITEM>Event 
 LEFT OUTER JOIN EventRecurrence ON EventRecurrence.RCR_ID = Event.EVNRCR_ID</ITEM>
 <ITEM DB="!sqlite">)</ITEM>
 <ITEM>
@@ -865,7 +865,7 @@ Select EVN_ID As ITM_ID, EVNGRP_ID As ITMGRP_ID, EVNOWN_ID As ITMOWN_ID, EvnLock
 <DELETETAGITEMLINKS>Delete From TagLinks Where TGLITM_ID = '%s'</DELETETAGITEMLINKS>
 <DELETETAGITEMLINKSFORCONTACTFOLDER>
 <ITEM DB="!mysql">
-Delete From TagLinks Where TGLITM_ID in
+Delete From TagLinks Where TGLITM_ID in 
 (
   Select ITM_ID From ContactItem Where (ITMGRP_ID = '%s') And (ItmFolder='%s') %s
 )
@@ -876,7 +876,7 @@ Delete TagLinks From TagLinks Left Join ContactItem On (TagLinks.TGLITM_ID = Con
 </DELETETAGITEMLINKSFORCONTACTFOLDER>
 <DELETETAGITEMLINKSFOREVENTFOLDER>
 <ITEM DB="!mysql">
-Delete From TagLinks Where TGLITM_ID in
+Delete From TagLinks Where TGLITM_ID in 
 (
   Select EVN_ID From Event Where (EVNGRP_ID = '%s') And (EvnFolder='%s') %s
 )
@@ -922,7 +922,7 @@ Delete TagLinks From TagLinks Left Join Event On (TagLinks.TGLITM_ID = Event.EVN
 <OWNERLIST>Select OWN_ID, OWN_Email, OwnTZID, OwnDateFormat, OwnWeekStart, OwnDayStart, OwnDayEnd, OwnAutoRevisionMode From EventOwner %s</OWNERLIST>
 
 <EVENTNOTIFYINFO>
-Select EVN_ID,
+Select EVN_ID, 
   (Select OWN_Email from EventOwner where OWN_ID = EVNOWN_ID) Owner,
   EvnNote, EvnURL, Evn_Created Created, GrpTitle Fdr_Title, Fdr_Id
 From
@@ -934,31 +934,31 @@ Where EVN_ID = '%s'
 </EVENTNOTIFYINFO>
 
 <MENTION_INFO>
-Select MEN_ID, MenWhoOwnEmail, MenLinkName, MenLinkEmail
+Select MEN_ID, MenWhoOwnEmail, MenLinkName, MenLinkEmail 
 From EventMyMention m
 Where m.MEN_ID = '%s'
 </MENTION_INFO>
 
 <ROOMUNREADS>
-Select count(*) count
-  From Event
- Where EvnFolder = '%s'
-   and EVNGRP_ID = '%s'
-   and EvnClass = '%s'
-   and EVN_ID &gt; '%s'
+Select count(*) count 
+  From Event 
+ Where EvnFolder = '%s' 
+   and EVNGRP_ID = '%s' 
+   and EvnClass = '%s' 
+   and EVN_ID &gt; '%s' 
 </ROOMUNREADS>
 
 <ROOMMENTIONS>
-Select count(distinct MENEVN_ID) count
-  From EventMyMention
- Where MEN_FOLDER = '%0:s'
-   and MENGRP_ID = '%1:s'
+Select count(distinct MENEVN_ID) count 
+  From EventMyMention 
+ Where MEN_FOLDER = '%0:s' 
+   and MENGRP_ID = '%1:s' 
    and MENLINK_ID = '%3:s'
-   and (MenWhen &gt; (Select Evn_Created
-					    From Event
+   and (MenWhen &gt; (Select Evn_Created 
+					    From Event 
 				 	   where EVN_ID = '%2:s')
-	or (MenWhen &gt; 0 and '' = '%2:s')
-   )
+	or (MenWhen &gt; 0 and '' = '%2:s')				  
+   )				  
 </ROOMMENTIONS>
 
 <DAILYDIGESTMAILS>
@@ -1024,7 +1024,7 @@ Delete From EventContact Where CNTEVN_ID IN
 <ITEM DB="mysql">
 Delete EventContact From EventContact Left Join Event On (EventContact.CNTEVN_ID = Event.EVN_ID)
  Where (EVNGRP_ID = '%s') And (EvnFolder = '%s') %s
-</ITEM>
+</ITEM> 
 </DELETECONTACTSFORFOLDER>
 
 <DELETEUSER>Delete From FolderRights Where (FRTGRP_ID = '%s') And (FrtEmail = '%s') And FRTFDR_ID = ''</DELETEUSER>
@@ -1038,7 +1038,7 @@ Delete From EventReminder Where RMNEVN_ID IN
  Select EVN_ID From Event Where (EVNGRP_ID = '%s') And (EvnFolder = '%s') %s
 )
 </ITEM>
-<ITEM DB="mysql">
+<ITEM DB="mysql"> 
 Delete EventReminder From EventReminder Left Join Event On (EventReminder.RMNEVN_ID = Event.EVN_ID)
 Where (EVNGRP_ID = '%s') And (EvnFolder = '%s') %s
 </ITEM>
@@ -1069,23 +1069,23 @@ Where (EVNGRP_ID = '%s') And (EvnFolder = '%s') %s
 </DELETEOCCURRENCESEVENTID>
 <DELETEOCCURRENCESEVENTIDFORFOLDER>
 <ITEM DB="default,sqlite,msaccess,mssql,firebird,interbase">
-Delete From Event Where EVN_ID IN
+Delete From Event Where EVN_ID IN 
 (
-  Select ExpEvnID From EventException, (Select EVNRCR_ID From Event Where (Event.EVNGRP_ID = '%s') AND (Event.EvnFolder = '%s') %s ) As EventRCRID
+  Select ExpEvnID From EventException, (Select EVNRCR_ID From Event Where (Event.EVNGRP_ID = '%s') AND (Event.EvnFolder = '%s') %s ) As EventRCRID 
     Where EventRCRID.EVNRCR_ID = EventException.EXPRCR_ID
 )
 </ITEM>
 <ITEM DB="oracle">
-Delete From Event Where EVN_ID IN
+Delete From Event Where EVN_ID IN 
 (
-  Select ExpEvnID From EventException Left Join Event on (Event.EVNRCR_ID = EventException.EXPRCR_ID)
+  Select ExpEvnID From EventException Left Join Event on (Event.EVNRCR_ID = EventException.EXPRCR_ID) 
     Where (Event.EVNGRP_ID = '%s') AND (Event.EvnFolder = '%s') %s
 )
 </ITEM>
 <ITEM DB="mysql">
-Delete Event From Event Join
+Delete Event From Event Join 
 (
-  Select ExpEvnID As EVN_ID From EventException Join Event On Event.EVNRCR_ID = EventException.EXPRCR_ID
+  Select ExpEvnID As EVN_ID From EventException Join Event On Event.EVNRCR_ID = EventException.EXPRCR_ID 
   Where (Event.EVNGRP_ID = '%s') AND (Event.EvnFolder = '%s')
 ) As DelEvent On DelEvent.EVN_ID = Event.EVN_ID
 </ITEM>
@@ -1097,14 +1097,14 @@ Delete Event From Event Join
 
 <ALLEVENTNONRECURRENT>Select EVN_ID, EVNGRP_ID, EVNRCR_ID, EVNOWN_ID, EvnLockOWN_ID, EvnModifiedOWN_ID,
 EvnShareType,
-EvnStartDate,
-EvnStartTime,
+EvnStartDate, 
+EvnStartTime, 
 EvnEndDate,
 EvnEndTime,
 EvnTimeFormat,
 EvnUID,
-EvnFlags %s From Event MainEvent
-LEFT OUTER JOIN EventReminder ON EventReminder.RMNEVN_ID = MainEvent.EVN_ID
+EvnFlags %s From Event MainEvent 
+LEFT OUTER JOIN EventReminder ON EventReminder.RMNEVN_ID = MainEvent.EVN_ID 
 Where (EVNGRP_ID = '%1:s') %4:s And ((EvnClass = 'E' And ((EVNRCR_ID Is Null) Or (EVNRCR_ID = ''))) Or (EvnClass = 'O') Or (EvnClass = 'V')) And
 (
   (
@@ -1112,14 +1112,14 @@ Where (EVNGRP_ID = '%1:s') %4:s And ((EvnClass = 'E' And ((EVNRCR_ID Is Null) Or
   )
   Or
   (
-    (EvnStartDate &lt;= %2:d) And ((EvnEndDate &gt; %2:d) Or ((EvnEndDate = %2:d) And (EvnEndTime &gt; 0)))
+    (EvnStartDate &lt;= %2:d) And ((EvnEndDate &gt; %2:d) Or ((EvnEndDate = %2:d) And (EvnEndTime &gt; 0))) 
   )
 ) ORDER BY EvnStartDate, EvnStartTime</ALLEVENTNONRECURRENT>
 
 <RMNTIMEREMINDERS>Select EVN_ID, EVNGRP_ID, EVNRCR_ID, EVNOWN_ID, EvnLockOWN_ID, EvnModifiedOWN_ID,
 EvnShareType,
-EvnStartDate,
-EvnStartTime,
+EvnStartDate, 
+EvnStartTime, 
 EvnEndDate,
 EvnEndTime,
 EvnFlags,
@@ -1129,8 +1129,8 @@ EvnTimeFormat %s From Event, EventReminder Where (EVNGRP_ID = '%1:s') %4:s And (
 <INTERVALEVENTRECURRENCELIST>
 <ITEM>Select EVN_ID, EVNGRP_ID, EVNRCR_ID, EVNOWN_ID, EvnLockOWN_ID, EvnModifiedOWN_ID,
 EvnShareType,
-EvnStartDate,
-EvnStartTime,
+EvnStartDate, 
+EvnStartTime, 
 EvnEndDate,
 EvnEndTime,
 EvnFlags,
@@ -1151,8 +1151,8 @@ EvnUID
 INNER JOIN EventRecurrence ON Event.EVNRCR_ID = EventRecurrence.RCR_ID</ITEM>
 <ITEM DB="!sqlite">)</ITEM>
 <ITEM>
-LEFT OUTER JOIN EventReminder ON EventReminder.RMNEVN_ID = Event.EVN_ID
-Where (EVNGRP_ID = '%1:s') %2:s And (RCR_ID &lt;&gt; '') And (RCR_ID Is Not Null) And (EvnClass &lt;&gt; 'O') And (EvnClass &lt;&gt; 'V') And ((RcrEndDate Is NULL) Or (RcrEndDate=0) Or (RcrEndDate&gt;=%d))
+LEFT OUTER JOIN EventReminder ON EventReminder.RMNEVN_ID = Event.EVN_ID 
+Where (EVNGRP_ID = '%1:s') %2:s And (RCR_ID &lt;&gt; '') And (RCR_ID Is Not Null) And (EvnClass &lt;&gt; 'O') And (EvnClass &lt;&gt; 'V') And ((RcrEndDate Is NULL) Or (RcrEndDate=0) Or (RcrEndDate&gt;=%d)) 
 </ITEM>
 </INTERVALEVENTRECURRENCELIST>
 
@@ -1167,7 +1167,7 @@ Where (EVNGRP_ID = '%1:s') %2:s And (RCR_ID &lt;&gt; '') And (RCR_ID Is Not Null
 
 <CLEARBINARYFORCONTACTFOLDER>
 <ITEM DB="!mysql">
-Delete From ItemAttr Where ATRITM_ID IN
+Delete From ItemAttr Where ATRITM_ID IN 
 (
   Select ITM_ID From ContactItem Where (ITMGRP_ID = '%s') And (ItmFolder='%s') %s
 )
@@ -1179,7 +1179,7 @@ Delete ItemAttr  From ItemAttr left Join ContactItem On (ItemAttr.ATRITM_ID =  C
 
 <CLEARBINARYFOREVENTFOLDER>
 <ITEM DB="!mysql">
-Delete From ItemAttr Where ATRITM_ID IN
+Delete From ItemAttr Where ATRITM_ID IN 
 (
   Select EVN_ID From Event Where (EVNGRP_ID = '%s') And (EvnFolder='%s') %s
 )
@@ -1197,7 +1197,7 @@ Delete ItemAttr  From ItemAttr left Join Event On (ItemAttr.ATRITM_ID =  Event.E
 
 <CLEARBINARYDATAFORCONTACTFOLDER>
 <ITEM DB="!mysql">
-Delete From ItemAttrData Where DataATR_ID IN
+Delete From ItemAttrData Where DataATR_ID IN 
 (
   Select ATR_ID From ItemAttr, ContactItem  Where  (ATRITM_ID = ITM_ID) AND (ITMGRP_ID = '%s') And (ItmFolder='%s') %s
 )
@@ -1209,7 +1209,7 @@ Delete ItemAttrData From ItemAttrData Left Join  ItemAttr On (  ItemAttrData.Dat
 
 <CLEARBINARYDATAFOREVENTFOLDER>
 <ITEM DB="!mysql">
-Delete From ItemAttrData Where DataATR_ID IN
+Delete From ItemAttrData Where DataATR_ID IN 
 (
   Select ATR_ID From ItemAttr, Event  Where  (ATRITM_ID = EVN_ID) AND (EVNGRP_ID = '%s') And (EvnFolder='%s') %s
 )
@@ -1228,7 +1228,7 @@ Delete ItemAttrData From ItemAttrData Left Join  ItemAttr On (  ItemAttrData.Dat
   <ITEM DB="sqlite,default">Insert Into TagLinks Select random(), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>
   <ITEM DB="msaccess">Insert Into TagLinks (TGL_ID, TGLTAG_ID,TGLITM_ID)  Select Rnd(), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>
   <ITEM DB="mysql">Insert Into TagLinks Select substr(rand(),3,10), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>
-  <ITEM DB="firebird,interbase">Insert Into TagLinks Select substring(rand() from 3 for 12), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>
+  <ITEM DB="firebird,interbase">Insert Into TagLinks Select substring(rand() from 3 for 12), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>    
   <ITEM DB="mssql">Insert Into TagLinks Select ABS(CAST(CAST(newid() AS VARBINARY) AS INT)), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>
   <ITEM DB="oracle">Insert Into TagLinks Select dbms_random.string('X', 10), EVN_ID, '%s' from Event Where EvnColor = '%s'</ITEM>
 </CONVERTEVNCOLORS>
@@ -1236,12 +1236,12 @@ Delete ItemAttrData From ItemAttrData Left Join  ItemAttr On (  ItemAttrData.Dat
   <ITEM DB="sqlite,default">Update Event Set EvnColor='', EVNTYPE='%s,'|| ifnull(EVNTYPE,'') Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>
   <ITEM DB="msaccess">Update Event Set EvnColor='', EVNTYPE='%s,' &amp; EVNTYPE Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>
   <ITEM DB="mysql">Update Event Set EvnColor='', EVNTYPE=CONCAT_WS(',','%s',EVNTYPE) Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>
-  <ITEM DB="mssql">Update Event Set EvnColor='', EVNTYPE='%s,' + ISNULL(EVNTYPE,'') Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>
-  <ITEM DB="oracle">Update Event Set EvnColor='', EVNTYPE='%s,' || NVL(EVNTYPE,'') Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>
+  <ITEM DB="mssql">Update Event Set EvnColor='', EVNTYPE='%s,' + ISNULL(EVNTYPE,'') Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>      
+  <ITEM DB="oracle">Update Event Set EvnColor='', EVNTYPE='%s,' || NVL(EVNTYPE,'') Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>  
   <ITEM DB="firebird,interbase">Update Event Set EvnColor='', EVNTYPE='%s,' || COALESCE(EVNTYPE,'') Where (EVNGRP_ID = '%s') AND (EvnColor = '%s')</ITEM>
 </UPDATEEVNCOLOR>
-
-
+  
+  
 
 <EXPORTFOLDERS>Select FDR_ID, FDRGRP_ID, FDR_PARENT, Fdr_Created, Fdr_Default, FdrType, FdrParam, FdrDisplay, FdrDesc, FdrGAL, FdrTZ, FdrHAB,Fdr_LastGlobalPin, Fdr_LastActivity,FdrSubType, Fdr_MetaData From Folders Where FDRGRP_ID = '%s'</EXPORTFOLDERS>
 <EXPORTFOLDERRIGHTS>Select FRTFDR_ID, FRTGRP_ID, FrtEmail, FrtRight From FolderRights Where FRTGRP_ID = '%s'</EXPORTFOLDERRIGHTS>
@@ -1271,8 +1271,8 @@ Delete ItemAttrData From ItemAttrData Left Join  ItemAttr On (  ItemAttrData.Dat
 <EXPORTGLOBALEVENTPIN>Select PIN_ID, PINEVN_ID,PINGRP_ID,PIN_FOLDER,PINOWN_ID,PinOwnEmail,PinOwnName,PinWhen,Pin_MetaData From GlobalEventPin Where PINGRP_ID = '%s'</EXPORTGLOBALEVENTPIN>
 <EXPORTEVENTCOMMENT>Select COMEVN_ID , COMGRP_ID, COM_FOLDER, COMOWN_ID,ComCount,COMLASTEVN_ID From EventComment Where COMGRP_ID = '%s'</EXPORTEVENTCOMMENT>
 
-
-
+  
+  
 
 
 
@@ -1289,7 +1289,7 @@ Select ItemAttr.ATR_ID, ItemAttr.ATRITM_ID, ItemAttr.AtrType, ItemAttr.AtrParam 
 </EXPORTITEMATTR>
 
 <EXPORTITEMATTRDATA>
-Select ItemAttrData.DataATR_ID, ItemAttrData.DataIndex, ItemAttrData.DataValue From ItemAttrData, ItemAttr, ContactItem Where ItemAttr.ATRITM_ID = ContactItem.ITM_ID And ItemAttr.ATR_ID = ItemAttrData.DataATR_ID And ContactItem.ITMGRP_ID = '%0:s'
+Select ItemAttrData.DataATR_ID, ItemAttrData.DataIndex, ItemAttrData.DataValue From ItemAttrData, ItemAttr, ContactItem Where ItemAttr.ATRITM_ID = ContactItem.ITM_ID And ItemAttr.ATR_ID = ItemAttrData.DataATR_ID And ContactItem.ITMGRP_ID = '%0:s' 
 Union
 Select ItemAttrData.DataATR_ID, ItemAttrData.DataIndex, ItemAttrData.DataValue From ItemAttrData, ItemAttr, Event Where ItemAttr.ATRITM_ID = Event.EVN_ID And ItemAttr.ATR_ID = ItemAttrData.DataATR_ID And Event.EVNGRP_ID = '%0:s'
 </EXPORTITEMATTRDATA>
@@ -1326,13 +1326,13 @@ Select ItemAttrData.DataATR_ID, ItemAttrData.DataIndex, ItemAttrData.DataValue F
 
 <DELETEALLITEMATTR>
 <ITEM DB="!mysql">
-Delete From ItemAttr Where ItemAttr.ATRITM_ID IN
-(Select ITM_ID as ID From ContactItem Where ITMGRP_ID = '%0:s'
+Delete From ItemAttr Where ItemAttr.ATRITM_ID IN 
+(Select ITM_ID as ID From ContactItem Where ITMGRP_ID = '%0:s' 
 UNION Select EVN_ID as ID From Event Where EVNGRP_ID = '%0:s')
 </ITEM>
 <ITEM DB="mysql">
 Delete ItemAttr From ItemAttr Join (
-Select ITM_ID as ID From ContactItem Where ITMGRP_ID = '%0:s'
+Select ITM_ID as ID From ContactItem Where ITMGRP_ID = '%0:s' 
 UNION
 Select EVN_ID as ID From Event Where EVNGRP_ID = '%0:s'
 ) As Items ON Items.ID = ItemAttr.ATRITM_ID;
@@ -1341,7 +1341,7 @@ Select EVN_ID as ID From Event Where EVNGRP_ID = '%0:s'
 
 <DELETEALLITEMATTRDATA>
 <ITEM DB="!mysql">
-Delete From ItemAttrData Where ItemAttrData.DataATR_ID IN
+Delete From ItemAttrData Where ItemAttrData.DataATR_ID IN 
 (Select ATR_ID as ID From ContactItem, ItemAttr Where ITMGRP_ID = '%0:s' And ItemAttr.ATRITM_ID = ContactItem.ITM_ID
 UNION Select ATR_ID as ID From Event, ItemAttr Where EVNGRP_ID = '%0:s' And ItemAttr.ATRITM_ID = Event.EVN_ID)
 </ITEM>
@@ -1382,16 +1382,16 @@ Where (ContactItem.ITMGRP_ID = '%s') %s
 <DELETECONTACTLOCATION>Delete From ContactLocation Where (LCTITM_ID = '%s') %s</DELETECONTACTLOCATION>
 <DELETECONTACTLOCATIONFORFOLDER>
 <ITEM DB="!mysql">
-Delete From ContactLocation Where
+Delete From ContactLocation Where 
 (
-  LCTITM_ID IN
+  LCTITM_ID IN 
   (
-   Select ITM_ID From ContactItem Where (ITMGRP_ID = '%s') And (ItmFolder='%s') %s
+   Select ITM_ID From ContactItem Where (ITMGRP_ID = '%s') And (ItmFolder='%s') %s 
   )
 )
 </ITEM>
 <ITEM DB="mysql">
-Delete ContactLocation From ContactLocation Left Join ContactItem On (ContactLocation.LCTITM_ID = ContactItem.ITM_ID) Where (ITMGRP_ID = '%s') And (ItmFolder='%s') %s
+Delete ContactLocation From ContactLocation Left Join ContactItem On (ContactLocation.LCTITM_ID = ContactItem.ITM_ID) Where (ITMGRP_ID = '%s') And (ItmFolder='%s') %s 
 </ITEM>
 </DELETECONTACTLOCATIONFORFOLDER>
 
@@ -1569,7 +1569,7 @@ Delete ContactLocation From ContactLocation Left Join ContactItem On (ContactLoc
 
 </FIELDTYPES>
 
-<!--
+<!-- 
 
 All strings below can be customized and feel free to do so. However, use the calendar-custom.xml file instead.
 The structure is exactly the same as calendar.xml but only the <STRINGS> section is used.
