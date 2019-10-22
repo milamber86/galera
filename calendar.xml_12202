@@ -195,7 +195,7 @@ EvnLinkID %%varchar%%(12),
 EvnLinkType int,
 Evn_MetaData %%text%%,
 EVNCOMEVNID %%varchar%%(12),
-PRIMARY KEY EventUnique (EVNGRP_ID,EvnFolder,EVN_ID)
+PRIMARY KEY EventUnique (EVN_ID)
 )
 </CREATETABLE>
 
@@ -243,7 +243,7 @@ MENLINK_ID %%varchar%%(12) NOT NULL,
 MenLinkEmail %%varchar%%(128),
 MenLinkName %%varchar%%(128),
 MenWhen %%bigint%%,
-PRIMARY KEY MENEVN_ID (MENEVN_ID,MENLINK_ID),
+PRIMARY KEY MENEVN_ID (MEN_ID),
 FOREIGN KEY(MENGRP_ID,MEN_FOLDER,MENEVN_ID) REFERENCES Event(EVNGRP_ID, EvnFolder,EVN_ID) ON DELETE CASCADE</ITEM><ITEM DB="!oracle"> ON UPDATE CASCADE</ITEM>
 <ITEM>)</ITEM>
 </CREATETABLE>
