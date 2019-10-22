@@ -24,7 +24,7 @@ CREATE TABLE `Aliases2` like `Aliases`;
 ALTER TABLE `Aliases2` DROP KEY `adomain`;
 ALTER TABLE `Aliases2` DROP KEY `aalias`;
 ALTER TABLE `Aliases2` DROP KEY `aliasdomain`;
-ALTER TABLE `Aliases2` ADD PRIMARY KEY `aliasdomain` (`A_Domain`,`A_Alias`);
+ALTER TABLE `Aliases2` ADD PRIMARY KEY `aliasdomain` (`A_UserID`,`A_Alias`);
 insert ignore Aliases2 select * from Aliases;
 rename table Aliases to Aliases_dup;rename table Aliases2 to Aliases;
 drop table Aliases_dup;
@@ -39,10 +39,7 @@ ALTER TABLE IPs ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 DROP TABLE IF EXISTS Senders2;
 DROP TABLE IF EXISTS Senders_dup;
 CREATE TABLE `Senders2` like `Senders`;
-ALTER TABLE Senders2 DROP KEY `iSndOwner`;
-ALTER TABLE Senders2 DROP KEY `iSndEmail`;
-ALTER TABLE `Senders2` DROP KEY `iSndOwnerEmail`;
-ALTER TABLE `Senders2` ADD PRIMARY KEY `iSndOwnerEmail` (`SndOwner`,`SndEmail`);
+ALTER TABLE `Senders2` ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 insert ignore Senders2 select * from Senders;
 rename table Senders to Senders_dup;rename table Senders2 to Senders;
 drop table Senders_dup;
@@ -119,7 +116,7 @@ rename table push to push_dup;rename table push2 to push;
 drop table push_dup;
 
 -- eas1:provisions - novy sdruzeny na user+device
-ALTER TABLE provisions ADD PRIMARY KEY `userdevice` (`user`,`device`);
+ALTER TABLE provisions ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
 
 
@@ -163,7 +160,7 @@ DROP TABLE IF EXISTS event2;
 DROP TABLE IF EXISTS event_dup;
 CREATE TABLE `event2` like `event`;
 ALTER TABLE `event2` DROP KEY `EventUnique`;
-ALTER TABLE `event2` ADD PRIMARY KEY `EventUnique` (`EVNGRP_ID`,`EvnFolder`,`EVN_ID`);
+ALTER TABLE `event2` ADD PRIMARY KEY `EventUnique` (`EVN_ID`);
 insert ignore event2 select * from event;
 rename table event to event_dup;rename table event2 to event;
 SET FOREIGN_KEY_CHECKS=0;
@@ -235,7 +232,7 @@ DROP TABLE IF EXISTS Eventmymention2;
 DROP TABLE IF EXISTS Eventmymention_dup;
 CREATE TABLE `Eventmymention2` like `Eventmymention`;
 ALTER TABLE `Eventmymention2` DROP KEY `MENEVN_ID`;
-ALTER TABLE `Eventmymention2` ADD PRIMARY KEY `MENEVN_ID` (`MENEVN_ID`,`MENLINK_ID`);
+ALTER TABLE `Eventmymention2` ADD PRIMARY KEY `MENEVN_ID` (`MEN_ID`);
 insert ignore Eventmymention2 select * from Eventmymention;
 rename table Eventmymention to Eventmymention_dup;rename table Eventmymention2 to Eventmymention;
 SET FOREIGN_KEY_CHECKS=0;
