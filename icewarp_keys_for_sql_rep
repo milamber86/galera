@@ -307,7 +307,7 @@ DROP TABLE IF EXISTS `Folders2`;
 DROP TABLE IF EXISTS `Folders_dup`;
 CREATE TABLE `Folders2` like `Folders`;
 ALTER TABLE `Folders2` DROP KEY `FolderIDIndex`;
-ALTER TABLE `Folders2` ADD PRIMARY KEY `FolderIDIndex` (`FDR_ID`,`FDRGRP_ID`);
+ALTER TABLE `Folders2` ADD PRIMARY KEY `FolderIDIndex` (`FDRGRP_ID`,`FDR_ID`);
 insert ignore Folders2 select * from Folders;
 rename table Folders to Folders_dup;rename table Folders2 to Folders;
 SET FOREIGN_KEY_CHECKS=0;
