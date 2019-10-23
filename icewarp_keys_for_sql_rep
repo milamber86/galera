@@ -16,7 +16,7 @@ order by tab.table_schema,
 
 -- SET
 -- Accounts database:
-use acc1;
+use iwacc;
 -- acc1:Aliases - zrusit adomain+aalias, pridat sdruzeny unique nad A_Domain, A_Alias
 DROP TABLE IF EXISTS Aliases2;
 DROP TABLE IF EXISTS Aliases_dup;
@@ -31,22 +31,15 @@ drop table Aliases_dup;
 
 
 -- Antispam database:
-use asp1;
+use iwasp;
 -- asp1:IPs - pridame umely klic
 ALTER TABLE IPs ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
--- asp1:Senders - zrusit iSndOwner+iSndEmail, pridat sdruzeny unique nad SndOwner, SndEmail
-DROP TABLE IF EXISTS Senders2;
-DROP TABLE IF EXISTS Senders_dup;
-CREATE TABLE `Senders2` like `Senders`;
-ALTER TABLE `Senders2` ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
-insert ignore Senders2 select * from Senders;
-rename table Senders to Senders_dup;rename table Senders2 to Senders;
-drop table Senders_dup;
-
+-- asp1:Senders - pridame umely klic
+ALTER TABLE `Senders` ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
 -- Directory cache database:
-use dc1;
+use iwdc;
 -- dc1:AccountCacheJournals - tam budeme muset pridat umely klic
 ALTER TABLE AccountCacheJournals ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
@@ -60,7 +53,7 @@ insert ignore DirectoryCache2 select * from DirectoryCache;
 rename table DirectoryCache to DirectoryCache_dup;rename table DirectoryCache2 to DirectoryCache;
 drop table DirectoryCache_dup;
 
--- dc1:DirectoryCacheSchedule - primary key na full_path_uniq
+-- dc:DirectoryCacheSchedule - primary key na full_path_uniq
 DROP TABLE IF EXISTS DirectoryCacheSchedule2;
 DROP TABLE IF EXISTS DirectoryCacheSchedule_dup;
 CREATE TABLE `DirectoryCacheSchedule2` like `DirectoryCacheSchedule`;
@@ -73,7 +66,7 @@ drop table DirectoryCacheSchedule_dup;
 
 
 -- ActiveSync database
-use eas1;
+use iweas;
 -- eas1:dummy_folders - zrusit dummy_folders_index, pridat sdruzeny unique nad device_id, folder_id
 DROP TABLE IF EXISTS dummy_folders2;
 DROP TABLE IF EXISTS dummy_folders_dup;
