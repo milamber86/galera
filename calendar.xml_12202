@@ -195,7 +195,8 @@ EvnLinkID %%varchar%%(12),
 EvnLinkType int,
 Evn_MetaData %%text%%,
 EVNCOMEVNID %%varchar%%(12),
-PRIMARY KEY EventUnique (EVN_ID)
+PRIMARY KEY EventUnique (EVN_ID),
+CONSTRAINT EventUnique UNIQUE (EVNGRP_ID, EvnFolder,EVN_ID)
 )
 </CREATETABLE>
 
