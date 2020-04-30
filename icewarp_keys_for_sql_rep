@@ -112,7 +112,7 @@ drop table push_dup;
 ALTER TABLE provisions ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
 
-
+-- GroupWare database:
 use gw1;
 -- gw1:APIToken - predelat TOK_ID na primary key
 DROP TABLE IF EXISTS APIToken2;
