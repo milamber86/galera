@@ -113,8 +113,6 @@ ALTER TABLE provisions ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT
 
 
 
--- Groupware database ( maybe better to create a new schema using https://github.com/milamber86/galera/blob/master/calendar.xml_12202
-and migrate groupware db to it )
 use gw1;
 -- gw1:APIToken - predelat TOK_ID na primary key
 DROP TABLE IF EXISTS APIToken2;
