@@ -79,6 +79,14 @@ vrrp_instance VI_1 {
                 auth_pass somepass
         }
 
+    ! Unicast specific option, this is the IP of the interface keepalived listens on
+    ! Unicast specific option, this is the IP of the peer instance 
+    unicast_src_ip <this node IP>   
+    unicast_peer {                
+               <peer node IP>
+        }
+ 
+
     ! these are the IP addresses that keepalived will setup on this
     ! machine. Later in the config we will specify which real
         ! servers  are behind these IPs
