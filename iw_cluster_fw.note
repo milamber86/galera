@@ -42,6 +42,6 @@ wsrep - tcp 4567, 4567, 4568, 4444
 OUT
 --
 App Server:
-license revalidation - tcp 80, 443 licenseprocessor.icewarp.com, www.icewarp.com
+license revalidation - tcp 80, 443 licenseprocessor.icewarp.com
 antispam updates - tcp 80, 443 www.icewarp.com
 kaspersky updates - tcp 80, 443 https://support.kaspersky.com/common/start/6105
