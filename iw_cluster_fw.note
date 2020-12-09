@@ -1,0 +1,47 @@
+IN
+--
+from App LB to App Server:
+smtp - tcp 25,465,587
+pop - tcp 110, 995
+imap - tcp 143, 993
+xmpp - tcp 5222, 5223, 5269
+web - tcp 80, 443
+gw, settings - tcp 5229
+
+from monitoring to App Server:
+snmp - tcp 161
+zabbix_gent - tcp 10050
+
+between App Servers:
+all communication if possible, else
+smtp - tcp,udp 25,465,587
+pop - tcp,udp 110, 995
+imap - tcp,udp 143, 993
+xmpp - tcp,udp 5222, 5223, 5269
+web - tcp,udp 80, 443
+gw, settings - tcp,udp 5229
+
+from App Server to DB LB:
+mysql - tcp 4008
+
+from monitoring to DB LB:
+snmp - tcp 161
+zabbix_gent - tcp 10050
+
+from DB LB to DB cluster node:
+mysql - tcp 3306
+
+from monitoring to DB cluster node:
+snmp - tcp 161
+zabbix_gent - tcp 10050
+
+between DB cluster nodes:
+mysql - tcp 3306
+wsrep - tcp 4567, 4567, 4568, 4444
+
+OUT
+--
+App Server:
+license revalidation - tcp 80, 443 licenseprocessor.icewarp.com, www.icewarp.com
+antispam updates - tcp 80, 443 www.icewarp.com
+kaspersky updates - tcp 80, 443 https://support.kaspersky.com/common/start/6105
