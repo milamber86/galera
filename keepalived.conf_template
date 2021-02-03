@@ -1,397 +1,489 @@
-! This is a comment
-! Configuration File for keepalived
-
 global_defs {
-   ! this is who emails will go to on alerts
-   notification_email {
-	user@example.loc
-    ! add a few more email addresses here if you would like
-   }
-   notification_email_from admins@example.com
+   router_id IW_LB1
 
-   ! I use the local machine to relay mail
-   smtp_server 10.1.1.10
-   smtp_connect_timeout 30
+   # Note: This is the AgentX address/socket
+   snmp_socket tcp:127.0.0.1:700
 
-   ! each load balancer should have a different ID
-   ! this will be used in SMTP alerts, so you should make
-   ! each router easily identifiable
-   lvs_id LVS_IW1_EXAMPLE_LOC
 }
 
-! vrrp_sync_groups make sure that several router instances
-! stay together on a failure - a good example of this is
-! that the external interface on one router fails and the backup server
-! takes over, you want the internal interface on the failed server
-! to failover as well, otherwise nothing will work.
-! you can have as many vrrp_sync_group blocks as you want.
 vrrp_sync_group VG1 {
    group {
       VI_1
-      VI_GATEWAY
+      VI_GW
    }
 }
 
-! each interface needs at least one vrrp_instance
-! each vrrp_instance is a group of VIPs that are logically grouped
-! together
-! you can have as many vrrp_instaces as you want
-
 vrrp_instance VI_1 {
-        state MASTER
-        interface ens3
-
-        lvs_sync_daemon_inteface ens3
-
-    ! each virtual router id must be unique per instance name!
-        virtual_router_id 51
-
-    ! MASTER and BACKUP state are determined by the priority
-    ! even if you specify MASTER as the state, the state will
-    ! be voted on by priority (so if your state is MASTER but your
-    ! priority is lower than the router with BACKUP, you will lose
-    ! the MASTER state)
-    ! I make it a habit to set priorities at least 50 points apart
-    ! note that a lower number is lesser priority - lower gets less vote
-        priority 150
-
-    ! how often should we vote, in seconds?
-        advert_int 1
-
-    ! send an alert when this instance changes state from MASTER to BACKUP
-        smtp_alert
-
-    ! this authentication is for syncing between failover servers
-    ! keepalived supports PASS, which is simple password
-    ! authentication
-    ! or AH, which is the IPSec authentication header.
-    ! I don't use AH
-    ! yet as many people have reported problems with it
-        authentication {
-                auth_type PASS
-                auth_pass somepass
-        }
-
-    ! these are the IP addresses that keepalived will setup on this
-    ! machine. Later in the config we will specify which real
-        ! servers  are behind these IPs
-    ! without this block, keepalived will not setup and takedown the
-    ! any IP addresses
-
-        virtual_ipaddress {
-                10.0.0.50
-        ! and more if you want them
-        }
+    state MASTER
+    interface ens224
+    virtual_router_id 69
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass YtKc7L
+    }
+    unicast_src_ip 10.0.0.48
+    unicast_peer {
+        10.0.0.49
+    }
+    virtual_ipaddress {
+        10.0.0.50
+    }
 }
 
-! now I setup the instance that the real servers will use as a default
-! gateway
-! most of the config is the same as above, but on a different interface
-
-vrrp_instance VI_GATEWAY {
-        state MASTER
-        interface ens6
-        lvs_sync_daemon_inteface ens6
-        virtual_router_id 52
-        priority 150
-        advert_int 1
-        smtp_alert
-        authentication {
-                auth_type PASS
-                auth_pass somepass
-        }
-        virtual_ipaddress {
-                192.168.1.50
-        }
+vrrp_instance VI_GW {
+    state MASTER
+    interface ens192
+    virtual_router_id 69
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass YtKc7L
+    }
+    unicast_src_ip 192.168.1.48
+    unicast_peer {
+        192.168.1.49
+    }
+    virtual_ipaddress {
+        192.168.1.50
+    }
 }
 
-! now we setup more information about are virtual server
-
-! notice we do not setup a virtual_server block for the 10.20.40.1
-! address in the VI_GATEWAY instance. That's because we are doing NAT
-! on that IP, and nothing else.
-
-
-virtual_server 10.0.0.50 25 {
-    delay_loop 6
-
-    ! use round-robin as a load balancing algorithm
-    lb_algo rr
-
-    ! we are doing NAT
+virtual_server fwmark 25 {
+    delay_loop 20
     lb_kind NAT
-    nat_mask 255.255.255.0
-
+    lb_algo wrr
+ #   persistence_timeout 600
     protocol TCP
 
-    ! there can be as many real_server blocks as you need
-
-    real_server 192.168.1.11 25 {
-
-    ! if we used weighted round-robin or a similar lb algo,
-    ! we include the weight of this server
-
-        weight 1
-
-    ! here is a health checker for this server.
-    ! we could use a custom script here (see the keepalived docs)
-    ! but we will just make sure we can do a vanilla tcp connect()
-    ! on port 22
-    ! if it fails, we will pull this realserver out of the pool
-    ! and send email about the removal
+    real_server 192.168.1.11 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 25
+            connect_port 25
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
-    real_server 192.168.1.12 25 {
-
-    ! if we used weighted round-robin or a similar lb algo,
-    ! we include the weight of this server
-
-        weight 1
-
-    ! here is a health checker for this server.
-    ! we could use a custom script here (see the keepalived docs)
-    ! but we will just make sure we can do a vanilla tcp connect()
-    ! on port 22
-    ! if it fails, we will pull this realserver out of the pool
-    ! and send email about the removal
+    real_server 192.168.1.12 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 25
-      	}
-    }
-}
-
-virtual_server 10.0.0.50 465 {
-    delay_loop 6
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    real_server 192.168.1.11 465 {
-        weight 1
-        TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 465
+            connect_port 25
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
-    real_server 192.168.1.12 465 {
-       	weight 1
-        TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 465
-       	}
-    }
-}
 
-virtual_server 10.0.0.50 587 {
-    delay_loop 6
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    real_server 192.168.1.11 587 {
-        weight 1
+    real_server 192.168.1.14 0 {
+        weight 64
         TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 587
+            connect_port 25
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
-    real_server 192.168.1.12 587 {
-       	weight 1
-        TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 587
-       	}
-    }
-}
 
-virtual_server 10.0.0.50 143 {
-    delay_loop 6
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    real_server 192.168.1.11 143 {
-        weight 1
+    real_server 192.168.1.15 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 143
-      	}
+            connect_port 25
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
     }
-    real_server	192.168.1.12 143 {
-        weight 1
+}                                                                                                                                                                                                                                                                                                                                  }
+
+virtual_server fwmark 587 {
+    delay_loop 20
+    lb_kind NAT
+    lb_algo wrr
+ #   persistence_timeout 600
+    protocol TCP
+    real_server 192.168.1.11 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 143
+            connect_port 587
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+    real_server 192.168.1.12 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 587
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 587
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 587
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
 }
 
-virtual_server 10.0.0.50 993 {
-    delay_loop 6
-    lb_algo rr
+virtual_server fwmark 465 {
+    delay_loop 20
     lb_kind NAT
-    nat_mask 255.255.255.0
+    lb_algo wrr
+ #   persistence_timeout 600
     protocol TCP
-    real_server 192.168.1.11 993 {
-        weight 1
+    real_server 192.168.1.11 0 {
+        weight 64
         TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 993
-        }
+               connect_port 465
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
     }
-    real_server 192.168.1.12 993 {
-       	weight 1
+    real_server 192.168.1.12 0 {
+        weight 64
         TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 993
-       	}
+            connect_port 465
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+           }
     }
-}
 
-virtual_server 10.0.0.50 5222 {
-    delay_loop 6
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    real_server 192.168.1.11 5222 {
-        weight 1
+    real_server 192.168.1.14 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 5222
+            connect_port 465
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
-    real_server 192.168.1.12 5222 {
-        weight 1
-        TCP_CHECK {
-                connect_timeout 3
-        connect_port 5222
-        }
-    }
-}
 
-virtual_server 10.0.0.50 5223 {
-    delay_loop 6
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    real_server 192.168.1.11 5223 {
-        weight 1
+    real_server 192.168.1.15 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 5223
-        }
-    }
-    real_server 192.168.1.12 5223 {
-        weight 1
-        TCP_CHECK {
-                connect_timeout 3
-        connect_port 5223
+            connect_port 465
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
 }
 
-virtual_server 10.0.0.50 80 {
-    delay_loop 10
-    lb_algo rr
+virtual_server fwmark 143 {
+    delay_loop 20
     lb_kind NAT
-    nat_mask 255.255.255.0
+    lb_algo wrr
+ #   persistence_timeout 600
     protocol TCP
-    virtualhost mail.example.loc
-    real_server 192.168.1.11 80 {
-        weight 1
-        HTTP_GET {
-		url {
-		     path /index.php
-		     digest 61e896895f7ac929fa0d6c9ff5b2fb0e
-		    }
-        connect_timeout 10
-        connect_port 80
-	nb_get_retry 3
-	delay_before_retry 10
-      	}
-    }
-    real_server	192.168.1.12 80 {
-        weight 1
-        HTTP_GET {
-		   url {
-			path /index.php
-             	     	digest 61e896895f7ac929fa0d6c9ff5b2fb0e
-                    	}
-        connect_timeout 10
-	nb_get_retry 3
-        delay_before_retry 10
-        connect_port 80
-        }
-    }
-}
-
-virtual_server 10.0.0.50 443 {
-    delay_loop 10
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    virtualhost	mail.example.loc
-    real_server 192.168.1.11 443 {
-       	weight 1
-	SSL_GET {
-                url {
-               	     path /index.php
-             	     digest 61e896895f7ac929fa0d6c9ff5b2fb0e
-                    }
-       	connect_timeout 10
-       	connect_port 443
-        nb_get_retry 3
-        delay_before_retry 10
-       	}
-    }
-    real_server 192.168.1.12 443 {
-       	weight 1
-        SSL_GET {
-                   url {
-                        path /index.php
-                        digest 61e896895f7ac929fa0d6c9ff5b2fb0e
-                        }
-       	connect_timeout 10
-        nb_get_retry 3
-        delay_before_retry 10
-        connect_port 443
-        }
-    }
-}
-
-virtual_server 10.0.0.50 44310 {
-    delay_loop 6
-    lb_algo rr
-    lb_kind NAT
-    nat_mask 255.255.255.0
-    protocol TCP
-    real_server 192.168.1.11 443 {
-        weight 1
+    real_server 192.168.1.11 0 {
+        weight 64
         TCP_CHECK {
-               	connect_timeout 3
-       	connect_port 143
+               connect_port 143
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+    real_server 192.168.1.12 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 143
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+           }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 143
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 143
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
 }
 
-virtual_server 10.0.0.50 44311 {
-    delay_loop 6
-    lb_algo rr
+virtual_server fwmark 993 {
+    delay_loop 20
     lb_kind NAT
-    nat_mask 255.255.255.0
+    lb_algo wrr
+ #   persistence_timeout 600
     protocol TCP
-    real_server 192.168.1.12 443 {
-        weight 1
+    real_server 192.168.1.11 0 {
+        weight 64
         TCP_CHECK {
-                connect_timeout 3
-        connect_port 143
+               connect_port 993
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+    real_server 192.168.1.12 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 993
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+           }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 993
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 993
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+}
+
+virtual_server fwmark 5222 {
+    delay_loop 20
+    lb_kind NAT
+    lb_algo wrr
+ #   persistence_timeout 600
+    protocol TCP
+    real_server 192.168.1.11 0 {
+        weight 64
+        TCP_CHECK {
+               connect_port 5222
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+    real_server 192.168.1.12 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5222
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+           }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5222
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5222
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+}
+
+virtual_server fwmark 5223 {
+    delay_loop 20
+    lb_kind NAT
+    lb_algo wrr
+ #   persistence_timeout 600
+    protocol TCP
+    real_server 192.168.1.11 0 {
+        weight 64
+        TCP_CHECK {
+               connect_port 5223
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+    real_server 192.168.1.12 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5223
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+           }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5223
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5223
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+}
+
+virtual_server fwmark 5229 {
+    delay_loop 20
+    lb_kind NAT
+    lb_algo wrr
+ #   persistence_timeout 600
+    protocol TCP
+    real_server 192.168.1.11 0 {
+        weight 64
+        TCP_CHECK {
+               connect_port 5229
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+         }
+    }
+    real_server 192.168.1.12 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5229
+             connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+           }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5229
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        TCP_CHECK {
+            connect_port 5229
+            connect_timeout 5    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+}
+
+
+virtual_server fwmark 443 {
+    delay_loop 120
+    lb_kind NAT
+    lb_algo wlc
+    persistence_timeout 120
+    protocol TCP
+    real_server 192.168.1.11 0 {
+        weight 64
+        SSL_GET
+        {
+            url {
+                path webcheck.php
+                status_code 200
+            }
+            connect_port 443
+            connect_timeout 20    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.12 0 {
+        weight 64
+        SSL_GET
+        {
+            url {
+                path webcheck.php
+                status_code 200
+            }
+            connect_port 443
+            connect_timeout 20    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.14 0 {
+        weight 64
+        SSL_GET
+        {
+            url {
+                path webcheck.php
+                status_code 200
+            }
+            connect_port 443
+            connect_timeout 20    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
+        }
+    }
+
+    real_server 192.168.1.15 0 {
+        weight 64
+        SSL_GET
+        {
+            url {
+                   path webcheck.php
+                   status_code 200
+            }
+            connect_port 443
+            connect_timeout 20    //Timeout duration of connection request
+            nb_get_retry 4        //retry count
+            delay_before_retry 5  //Delay before retrying
         }
     }
 }
