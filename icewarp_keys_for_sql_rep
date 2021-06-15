@@ -24,19 +24,26 @@ CREATE TABLE `Aliases2` like `Aliases`;
 ALTER TABLE `Aliases2` DROP KEY `adomain`;
 ALTER TABLE `Aliases2` DROP KEY `aalias`;
 ALTER TABLE `Aliases2` DROP KEY `aliasdomain`;
-ALTER TABLE `Aliases2` ADD PRIMARY KEY `aliasdomain` (`A_UserID`,`A_Alias`);
+ALTER TABLE `Aliases2` ADD PRIMARY KEY `aliasdomain` (`A_Domain`,`A_Alias`);
 insert ignore Aliases2 select * from Aliases;
 rename table Aliases to Aliases_dup;rename table Aliases2 to Aliases;
 drop table Aliases_dup;
 
+-- acc1:MetaData - zmenit key na primary
+ALTER TABLE MetaData DROP KEY `idx_metadata_itemkey`;
+ALTER TABLE MetaData ADD PRIMARY KEY `idx_metadata_itemkey` (`item_key`);
 
 -- Antispam database:
 use iwasp;
 -- asp1:IPs - pridame umely klic
 ALTER TABLE IPs ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
--- asp1:Senders - pridame umely klic
-ALTER TABLE `Senders` ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
+-- asp1:Senders - pridame sdruzeny primarni klic
+ALTER TABLE senders ADD PRIMARY KEY `idx_owner_email` (`SndOwner`,`SndEmail`);
+
+-- asp1:MetaData - zmenit key na primary
+ALTER TABLE MetaData DROP KEY `idx_metadata_itemkey`;
+ALTER TABLE MetaData ADD PRIMARY KEY `idx_metadata_itemkey` (`item_key`);
 
 -- Directory cache database:
 use iwdc;
@@ -63,6 +70,9 @@ insert ignore DirectoryCacheSchedule2 select * from DirectoryCacheSchedule;
 rename table DirectoryCacheSchedule to DirectoryCacheSchedule_dup;rename table DirectoryCacheSchedule2 to DirectoryCacheSchedule;
 drop table DirectoryCacheSchedule_dup;
 
+-- dc1:MetaData - zmenit key na primary
+ALTER TABLE MetaData DROP KEY `idx_metadata_itemkey`;
+ALTER TABLE MetaData ADD PRIMARY KEY `idx_metadata_itemkey` (`item_key`);
 
 
 -- ActiveSync database
@@ -159,16 +169,17 @@ drop table event_dup;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:eventcomment - change COMEVN_ID to primary key
-DROP TABLE IF EXISTS `eventcomment2`;
-DROP TABLE IF EXISTS `eventcomment_dup`;
-CREATE TABLE `eventcomment2` like `eventcomment`;
-ALTER TABLE `eventcomment2` DROP KEY `COMEVN_ID`;
-ALTER TABLE `eventcomment2` ADD PRIMARY KEY `COMEVN_ID` (`COMEVN_ID`,`COMOWN_ID`);
-insert ignore eventcomment2 select * from eventcomment;
-rename table eventcomment to eventcomment_dup;rename table eventcomment2 to eventcomment;
-SET FOREIGN_KEY_CHECKS=0;
-drop table eventcomment_dup;
-SET FOREIGN_KEY_CHECKS=1;
+ALTER TABLE eventcomment ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
+--DROP TABLE IF EXISTS `eventcomment2`;
+--DROP TABLE IF EXISTS `eventcomment_dup`;
+--CREATE TABLE `eventcomment2` like `eventcomment`;
+--ALTER TABLE `eventcomment2` DROP KEY `COMEVN_ID`;
+--ALTER TABLE `eventcomment2` ADD PRIMARY KEY `COMEVN_ID` (`COMEVN_ID`,`COMOWN_ID`);
+--insert ignore eventcomment2 select * from eventcomment;
+--rename table eventcomment to eventcomment_dup;rename table eventcomment2 to eventcomment;
+--SET FOREIGN_KEY_CHECKS=0;
+--drop table eventcomment_dup;
+--SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:EventContact - predelat ContactIndex na primary (nechat oba sloupecky)
 DROP TABLE IF EXISTS `EventContact2`;
@@ -195,16 +206,16 @@ drop table EventException_dup;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:EventGroup - predelat GroupOwnerIndex na unique (nechat oba sloupecky)
-DROP TABLE IF EXISTS `EventGroup2`;
-DROP TABLE IF EXISTS `EventGroup_dup`;
-CREATE TABLE `EventGroup2` like `EventGroup`;
-ALTER TABLE `EventGroup2` DROP KEY `GroupOwnerIndex`;
-ALTER TABLE `EventGroup2` ADD PRIMARY KEY `GroupOwnerIndex` (`GRP_ID`,`GRPOWN_ID`);
-insert ignore EventGroup2 select * from EventGroup;
-rename table EventGroup to EventGroup_dup;rename table EventGroup2 to EventGroup;
-SET FOREIGN_KEY_CHECKS=0;
-drop table EventGroup_dup;
-SET FOREIGN_KEY_CHECKS=1;
+--DROP TABLE IF EXISTS `EventGroup2`;
+--DROP TABLE IF EXISTS `EventGroup_dup`;
+--CREATE TABLE `EventGroup2` like `EventGroup`;
+--ALTER TABLE `EventGroup2` DROP KEY `GroupOwnerIndex`;
+--ALTER TABLE `EventGroup2` ADD PRIMARY KEY `GroupOwnerIndex` (`GRP_ID`,`GRPOWN_ID`);
+--insert ignore EventGroup2 select * from EventGroup;
+--rename table EventGroup to EventGroup_dup;rename table EventGroup2 to EventGroup;
+--SET FOREIGN_KEY_CHECKS=0;
+--drop table EventGroup_dup;
+--SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:EventHoliday - zrusit HolidayIndex, pridat sdruzeny unique nad HOLOWN_ID, HolHolidayID
 DROP TABLE IF EXISTS EventHoliday2;
@@ -219,28 +230,30 @@ drop table EventHoliday_dup;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:eventmymention - predelat MENEVN_ID na primary key
-DROP TABLE IF EXISTS Eventmymention2;
-DROP TABLE IF EXISTS Eventmymention_dup;
-CREATE TABLE `Eventmymention2` like `Eventmymention`;
-ALTER TABLE `Eventmymention2` DROP KEY `MENEVN_ID`;
-ALTER TABLE `Eventmymention2` ADD PRIMARY KEY `MENEVN_ID` (`MEN_ID`);
-insert ignore Eventmymention2 select * from Eventmymention;
-rename table Eventmymention to Eventmymention_dup;rename table Eventmymention2 to Eventmymention;
-SET FOREIGN_KEY_CHECKS=0;
-drop table Eventmymention_dup;
-SET FOREIGN_KEY_CHECKS=1;
+ALTER TABLE eventmymention ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
+--DROP TABLE IF EXISTS Eventmymention2;
+--DROP TABLE IF EXISTS Eventmymention_dup;
+--CREATE TABLE `Eventmymention2` like `Eventmymention`;
+--ALTER TABLE `Eventmymention2` DROP KEY `MENEVN_ID`;
+--ALTER TABLE `Eventmymention2` ADD PRIMARY KEY `MENEVN_ID` (`MEN_ID`);
+--insert ignore Eventmymention2 select * from Eventmymention;
+--rename table Eventmymention to Eventmymention_dup;rename table Eventmymention2 to Eventmymention;
+--SET FOREIGN_KEY_CHECKS=0;
+--drop table Eventmymention_dup;
+--SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:eventmyreaction - predelat REAOWN_ID na primary key
-DROP TABLE IF EXISTS Eventmyreaction2;
-DROP TABLE IF EXISTS Eventmyreaction_dup;
-CREATE TABLE `Eventmyreaction2` like `Eventmyreaction`;
-ALTER TABLE `Eventmyreaction2` DROP KEY `REAOWN_ID`;
-ALTER TABLE `Eventmyreaction2` ADD PRIMARY KEY `REAOWN_ID` (`REAOWN_ID`,`REAEVN_ID`);
-insert ignore Eventmyreaction2 select * from Eventmyreaction;
-rename table Eventmyreaction to Eventmyreaction_dup;rename table Eventmyreaction2 to Eventmyreaction;
-SET FOREIGN_KEY_CHECKS=0;
-drop table Eventmyreaction_dup;
-SET FOREIGN_KEY_CHECKS=1;
+ALTER TABLE eventmyreaction ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
+--DROP TABLE IF EXISTS Eventmyreaction2;
+--DROP TABLE IF EXISTS Eventmyreaction_dup;
+--CREATE TABLE `Eventmyreaction2` like `Eventmyreaction`;
+--ALTER TABLE `Eventmyreaction2` DROP KEY `REAOWN_ID`;
+--ALTER TABLE `Eventmyreaction2` ADD PRIMARY KEY `REAOWN_ID` (`REAOWN_ID`,`REAEVN_ID`);
+--insert ignore Eventmyreaction2 select * from Eventmyreaction;
+--rename table Eventmyreaction to Eventmyreaction_dup;rename table Eventmyreaction2 to Eventmyreaction;
+--SET FOREIGN_KEY_CHECKS=0;
+--drop table Eventmyreaction_dup;
+--SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:EventOwner - predelat OwnerIndex na unique/primary
 DROP TABLE IF EXISTS EventOwner2;
@@ -354,7 +367,7 @@ DROP TABLE IF EXISTS `Tags2`;
 DROP TABLE IF EXISTS `Tags_dup`;
 CREATE TABLE `Tags2` like `Tags`;
 ALTER TABLE `Tags2` DROP KEY `TagIDIndex`;
-ALTER TABLE `Tags2` ADD PRIMARY KEY `TagIDIndex` (`TAGGRP_ID`,`TAG_ID`);
+ALTER TABLE `Tags2` ADD PRIMARY KEY `TagIDIndex` (`TAG_ID`);
 insert ignore Tags2 select * from Tags;
 rename table Tags to Tags_dup;rename table Tags2 to Tags;
 SET FOREIGN_KEY_CHECKS=0;
