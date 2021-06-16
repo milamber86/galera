@@ -39,7 +39,13 @@ use iwasp;
 ALTER TABLE IPs ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
 -- asp1:Senders - pridame sdruzeny primarni klic
-ALTER TABLE senders ADD PRIMARY KEY `idx_owner_email` (`SndOwner`,`SndEmail`);
+DROP TABLE IF EXISTS Senders2;
+DROP TABLE IF EXISTS Senders_dup;
+CREATE TABLE `Senders2` like `Senders`;
+ALTER TABLE Senders2 ADD PRIMARY KEY `idx_owner_email` (`SndOwner`,`SndEmail`);
+INSERT IGNORE INTO Senders2 SELECT * FROM Senders;
+RENAME TABLE Senders TO Senders_dup;RENAME TABLE Senders2 TO Senders;
+DROP TABLE Senders_dup;
 
 -- asp1:MetaData - zmenit key na primary
 ALTER TABLE MetaData DROP KEY `idx_metadata_itemkey`;
@@ -206,16 +212,16 @@ drop table EventException_dup;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:EventGroup - predelat GroupOwnerIndex na unique (nechat oba sloupecky)
---DROP TABLE IF EXISTS `EventGroup2`;
---DROP TABLE IF EXISTS `EventGroup_dup`;
---CREATE TABLE `EventGroup2` like `EventGroup`;
---ALTER TABLE `EventGroup2` DROP KEY `GroupOwnerIndex`;
---ALTER TABLE `EventGroup2` ADD PRIMARY KEY `GroupOwnerIndex` (`GRP_ID`,`GRPOWN_ID`);
---insert ignore EventGroup2 select * from EventGroup;
---rename table EventGroup to EventGroup_dup;rename table EventGroup2 to EventGroup;
---SET FOREIGN_KEY_CHECKS=0;
---drop table EventGroup_dup;
---SET FOREIGN_KEY_CHECKS=1;
+DROP TABLE IF EXISTS `EventGroup2`;
+DROP TABLE IF EXISTS `EventGroup_dup`;
+CREATE TABLE `EventGroup2` like `EventGroup`;
+ALTER TABLE `EventGroup2` DROP KEY `GroupOwnerIndex`;
+ALTER TABLE `EventGroup2` ADD PRIMARY KEY `GroupOwnerIndex` (`GRP_ID`,`GRPOWN_ID`);
+insert ignore EventGroup2 select * from EventGroup;
+rename table EventGroup to EventGroup_dup;rename table EventGroup2 to EventGroup;
+SET FOREIGN_KEY_CHECKS=0;
+drop table EventGroup_dup;
+SET FOREIGN_KEY_CHECKS=1;
 
 -- gw1:EventHoliday - zrusit HolidayIndex, pridat sdruzeny unique nad HOLOWN_ID, HolHolidayID
 DROP TABLE IF EXISTS EventHoliday2;
@@ -350,6 +356,10 @@ rename table ItemAttrData to ItemAttrData_dup;rename table ItemAttrData2 to Item
 SET FOREIGN_KEY_CHECKS=0;
 drop table ItemAttrData_dup;
 SET FOREIGN_KEY_CHECKS=1;
+
+-- gw1:MetaData - zmenit key na primary
+ALTER TABLE MetaData DROP KEY `idx_metadata_itemkey`;
+ALTER TABLE MetaData ADD PRIMARY KEY `idx_metadata_itemkey` (`item_key`);
 
 -- gw1:TagLinks - pridat unique/primary nad sloupeckem TGL_ID
 DROP TABLE IF EXISTS `TagLinks2`;
