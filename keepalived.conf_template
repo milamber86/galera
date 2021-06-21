@@ -16,7 +16,7 @@ vrrp_sync_group VG1 {
 vrrp_instance VI_1 {
     state MASTER
     interface ens224
-    virtual_router_id 69
+    virtual_router_id 59
     priority 100
     advert_int 1
     authentication {
