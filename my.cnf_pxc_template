@@ -10,6 +10,7 @@
 # !includedir /etc/my.cnf.d/
 # !includedir /etc/percona-xtradb-cluster.conf.d/
 [mysqld]
+pxc-encrypt-cluster-traffic = OFF
 innodb_force_recovery = 0
 pxc_strict_mode = PERMISSIVE
 old_alter_table = ON
