@@ -142,9 +142,6 @@ wsrep_max_ws_size=2G
 # to enable debug level logging, set this to 1
 wsrep_debug=0
 
-# convert locking sessions into transactions
-wsrep_convert_LOCK_to_trx=0
-
 # how many times to retry deadlocked autocommits
 wsrep_retry_autocommit=1
 
