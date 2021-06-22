@@ -99,7 +99,7 @@ performance-schema-max-mutex-classes = 0
 performance-schema-max-mutex-instances = 0
 
 # Full path to wsrep provider library or 'none'
-wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
+wsrep_provider=/usr/lib64/libgalera_smm.so
 wsrep_on=ON
 wsrep_node_address=10.0.0.1 # actual node IP
 
