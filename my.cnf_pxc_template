@@ -57,7 +57,7 @@ character_set_server = utf8mb4
 # REPLICATION SPECIFIC
 server_id=1
 binlog_format=ROW
-log_bin=/var/lib/mysql/binlog
+#log_bin=/var/lib/mysql/binlog
 log_slave_updates=1
 expire_logs_days=3
 # relay_log = relay-bin
