@@ -179,7 +179,8 @@ wsrep_sst_method=xtrabackup-v2
 # Depends on SST method. For mysqldump method it is root:<root password>
 # IMPORTANT: The user/password in wsrep_sst_auth must match
 # user/password in [xtrabackup]
-wsrep_sst_auth=repuser:repuserpass
+# wsrep_sst_auth=repuser:repuserpass
+# ( deprecated in PXC 8.0 )
 
 # Desired SST donor name.
 #wsrep_sst_donor=
