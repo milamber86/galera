@@ -133,6 +133,10 @@ drop table push_dup;
 -- eas1:provisions - novy sdruzeny na user+device
 ALTER TABLE provisions ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
 
+-- Webclient database:
+use wc1;
+-- wc1:wm_metadata - pridame umely klic
+ALTER TABLE wm_metadata ADD PRIMARY KEY `idx_metadata_itemkey` (`item_key`);
 
 -- GroupWare database:
 use gw1;
