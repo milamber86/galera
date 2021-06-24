@@ -83,6 +83,12 @@ ALTER TABLE MetaData ADD PRIMARY KEY `idx_metadata_itemkey` (`item_key`);
 
 -- ActiveSync database
 use iweas;
+-- eas1:d_internals - pridame umely klic
+ALTER TABLE d_internals ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
+
+-- eas1:p_internals - pridame umely klic
+ALTER TABLE p_internals ADD record_id int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT;
+
 -- eas1:dummy_folders - zrusit dummy_folders_index, pridat sdruzeny unique nad device_id, folder_id
 DROP TABLE IF EXISTS dummy_folders2;
 DROP TABLE IF EXISTS dummy_folders_dup;
