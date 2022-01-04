@@ -34,7 +34,6 @@ virtual_server 172.16.5.135 9736 {
     delay_loop 20
     lb_kind NAT
     lb_algo wrr
- #   persistence_timeout 600
     protocol TCP
 
     real_server 192.168.0.126 6379 {
