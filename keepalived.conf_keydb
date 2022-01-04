@@ -1,0 +1,50 @@
+global_defs {
+   router_id KEYDB_TEST
+
+   # Note: This is the AgentX address/socket
+   snmp_socket tcp:127.0.0.1:700
+
+   enable_script_security
+}
+
+vrrp_instance VIP_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id 101
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass password
+    }
+   unicast_src_ip 192.168.0.126     # Unicast specific option, this is the IP of the interface keepalived listens on
+   unicast_peer {                   # Unicast specific option, this is the IP of the peer instance
+     192.168.0.152
+   }
+    virtual_ipaddress {
+        172.16.5.135
+    }
+}
+
+virtual_server 172.16.5.135 9736 {
+    delay_loop 20
+    lb_kind NAT
+    lb_algo wrr
+ #   persistence_timeout 600
+    protocol TCP
+
+    real_server 192.168.0.126 6379 {
+        weight 6400
+	MISC_CHECK {
+                    misc_path"/etc/keepalived/keydbhc.sh 192.168.0.126 6379"
+                    misc_timeout 5
+                    }
+	}
+    real_server 192.168.0.152 6379 {
+        weight 1
+	MISC_CHECK {
+                    misc_path"/etc/keepalived/keydbhc.sh 192.168.0.152 6379"
+                    misc_timeout 5
+                    }
+	}
+}
