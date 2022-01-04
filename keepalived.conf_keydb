@@ -1,3 +1,5 @@
+# firewall-cmd --permanent --add-rich-rule='rule family=ipv4 source address=172.16.5.135/32 masquerade'
+
 global_defs {
    router_id KEYDB_TEST
 
