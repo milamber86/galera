@@ -1,4 +1,6 @@
 # firewall-cmd --permanent --add-rich-rule='rule family=ipv4 source address=172.16.5.135/32 masquerade'
+# useradd -r -s /sbin/nologin -g keepalived_script -M keepalived_script
+# chown keepalived_script:keepalived_script /etc/keepalived/keydbhc.sh
 
 global_defs {
    router_id KEYDB_TEST
