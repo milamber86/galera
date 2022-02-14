@@ -1,10 +1,23 @@
 #!/bin/bash
-# run on node node1 keydbinstall.sh "<IP node 1>" "<IP node 2>" "<IP keepalived VIP>" "<interface name, ie: eth0 or ens192>"
-# set keepalived priotity 98 and swap its unicast peers for node2
+# run on master node: keydbinstall.sh "<IP node 1>" "<IP node 2>" "<IP keepalived VIP>" "<interface name, ie: eth0 or ens192>" "<keepalived vrrp instance priority>"
+# set keepalived priority 100 for master node, set keepalived priotity 98 and swap unicast peers for slave node
+# - vrrp and keydb passwords are generated, you can find them in /etc/keepalived/keepalived.conf and /etc/keydb/keydb.conf after installation
+# - KeyDB should be accessible on VIP 192.168.1.100:9736 after installation
+# - firewall is not configured by this script
+# - keepalived snmp monitoring socket is configured to listen on 127.0.0.1:700
+# example:
+# master node: 192.168.1.101
+# slave node:  192.168.1.102
+# VIP IP:      192.168.1.100
+# vrrp interface name: ens192
+# ./keydbinstall.sh "192.168.1.101" "192.168.1.102" "192.168.1.100" "ens192" "100" #(run on master node)
+# ./keydbinstall.sh "192.168.1.102" "192.168.1.101" "192.168.1.100" "ens192" "98" #(run on slave node)
+#
 IPnode1="${1}";
 IPnode2="${2}";
 IPVIP="${3}";
 VIPifname="${4}";
+priority="${5}"
 keydbPass="$(tr -cd '[:alnum:]' < /dev/urandom | fold -w12 | head -n1)";
 keepalivedPass="$(tr -cd '[:alnum:]' < /dev/urandom | fold -w12 | head -n1)";
 
@@ -58,7 +71,7 @@ vrrp_instance VIP_1 {
     state MASTER
     interface ${VIPifname}
     virtual_router_id 101
-    priority 100
+    priority ${priority}
     advert_int 1
     authentication {
         auth_type PASS
