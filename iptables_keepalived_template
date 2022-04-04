@@ -1,9 +1,14 @@
-### iptables cfg example for keepalived    loadbalancer ###
+### iptables cfg example for keepalived loadbalancer ###
 ###
-# loadbalancer 1, external interface IP 10.0.0.48(ens224), internal interface IP 192.168.1.48(ens192)
-# loadbalancer VIP floating between loadbalancer 1 and loadbalancer 2, external 10.0.0.50, internal 192.168.1.50
-# ( 192.168.1.50 is default GW for backend IceWarp servers )
-# IceWarp backend servers have internal IPs 192.168.1.11 and 192.168.1.12, network 192.168.1.0/24
+# loadbalancer 1: external interface IPv4 10.0.0.48(ens224), IPv6 fd00::1:1:1:10(ens224)
+#                 internal interface IPv4 192.168.1.48(ens192) IPv6 fd00::2:2:2:10(ens192)
+# loadbalancer 2: external interface IPv4 10.0.0.48(ens224), IPv6 fd00::1:1:1:11(ens224)
+#                 internal interface IPv4 192.168.1.48(ens192) IPv6 fd00::2:2:2:11(ens192)
+# loadbalancer VIP: external IPv4 10.0.0.50(ens224), IPv6 fd00::1:1:1:25(ens224)
+#                   internal IPv4 192.168.1.50(ens192), IPv6 fd00::2:2:2:25(ens192)
+# IceWarp server 1: IPv4 192.168.1.11, IPv6 fd00::2:2:2:51
+# IceWarp server 2: Ipv4 192.168.1.12, IPv6 fd00::2:2:2:52
+# ( 192.168.1.50 / fd00::2:2:2:25 is default GW for IceWarp servers )
 ###
 ###
 *nat
@@ -15,12 +20,14 @@
 -A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 80 -j MARK --set-xmark 0x1bb/0xffffffff
 -A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 443 -j MARK --set-xmark 0x1bb/0xffffffff
 -A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 5222 -j MARK --set-xmark 0x1466/0xffffffff
--A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 5223 -j MARK --set-xmark 0x1467/0xffffffff
+-A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 5223 -j MARK --set-xmark 0x1466/0xffffffff
 -A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 25 -j MARK --set-xmark 0x19/0xffffffff
--A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 587 -j MARK --set-xmark 0x24b/0xffffffff
--A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 465 -j MARK --set-xmark 0x1d1/0xffffffff
+-A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 587 -j MARK --set-xmark 0x19/0xffffffff
+-A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 465 -j MARK --set-xmark 0x19/0xffffffff
 -A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 143 -j MARK --set-xmark 0x8f/0xffffffff
--A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 993 -j MARK --set-xmark 0x3e1/0xffffffff
+-A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 993 -j MARK --set-xmark 0x8f/0xffffffff
+-A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 143 -j MARK --set-xmark 0x6e/0xffffffff
+-A PREROUTING -d 10.0.0.50/32 -p tcp -m tcp --dport 993 -j MARK --set-xmark 0x6e/0xffffffff
 # NAT for balancing:
 -A POSTROUTING -s 192.168.1.0/24 -o ens224 -j SNAT --to-source 10.0.0.50
 -A POSTROUTING -s 192.168.1.0/24 -j MASQUERADE
