@@ -1,0 +1,13 @@
+### iptables cfg example for keepalived loadbalancer ###
+###
+# loadbalancer 1: external interface IPv4 10.0.0.48(ens224), IPv6 fd00::1:1:1:10(ens224)
+#                 internal interface IPv4 192.168.1.48(ens192) IPv6 fd00::2:2:2:10(ens192)
+# loadbalancer 2: external interface IPv4 10.0.0.48(ens224), IPv6 fd00::1:1:1:11(ens224)
+#                 internal interface IPv4 192.168.1.48(ens192) IPv6 fd00::2:2:2:11(ens192)
+# loadbalancer VIP: external IPv4 10.0.0.50(ens224), IPv6 fd00::1:1:1:25(ens224)
+#                   internal IPv4 192.168.1.50(ens192), IPv6 fd00::2:2:2:25(ens192)
+# IceWarp server 1: IPv4 192.168.1.11, IPv6 fd00::2:2:2:51
+# IceWarp server 2: Ipv4 192.168.1.12, IPv6 fd00::2:2:2:52
+# ( 192.168.1.50 / fd00::2:2:2:25 is default GW for IceWarp servers )
+###
+###
